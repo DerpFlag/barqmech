@@ -67,17 +67,21 @@ export function clearAdminCookieHeader() {
   return `${ADMIN_COOKIE}=; ${adminCookieFlags()}; Max-Age=0`
 }
 
+/** True when ADMIN_PASSWORD is non-empty (after trim). */
+export function adminPasswordConfigured() {
+  const raw = process.env.ADMIN_PASSWORD
+  return raw != null && String(raw).trim() !== ''
+}
+
 export function adminPasswordOk(password) {
-  const configured = process.env.ADMIN_PASSWORD
+  const raw = process.env.ADMIN_PASSWORD
+  const fromEnv = raw != null && String(raw).trim() !== '' ? String(raw).trim() : null
   const expected =
-    configured != null && String(configured).trim() !== ''
-      ? String(configured)
-      : process.env.NODE_ENV === 'production' || process.env.VERCEL === '1'
-        ? null
-        : 'barq123mech'
-  if (expected == null) return false
-  const a = String(password)
-  const b = String(expected)
+    fromEnv ??
+    (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' ? null : 'barq123mech')
+  if (expected == null || expected === '') return false
+  const a = String(password).trim()
+  const b = String(expected).trim()
   if (a.length !== b.length) return false
   try {
     return timingSafeEqual(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8'))
