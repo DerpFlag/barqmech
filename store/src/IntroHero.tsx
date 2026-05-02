@@ -30,6 +30,42 @@ export function IntroHero({
     introDoneRef.current = introDone
   }, [introDone])
 
+  /** Wait for enough buffer before playing — avoids jitter from starting while still loading. */
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || introDone) return
+
+    let cancelled = false
+    let started = false
+
+    const tryPlay = () => {
+      if (cancelled || started || introDoneRef.current) return
+      started = true
+      void video.play().catch(() => {
+        /* autoplay policies / abort — ignore */
+      })
+    }
+
+    const onCanPlayThrough = () => tryPlay()
+
+    video.addEventListener('canplaythrough', onCanPlayThrough, { once: true })
+
+    if (video.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) {
+      tryPlay()
+    }
+
+    const fallbackMs = 15000
+    const fallbackId = window.setTimeout(() => {
+      if (!cancelled && !started) tryPlay()
+    }, fallbackMs)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(fallbackId)
+      video.removeEventListener('canplaythrough', onCanPlayThrough)
+    }
+  }, [videoSrc, introDone])
+
   useEffect(() => {
     const video = videoRef.current
     if (video) {
@@ -229,7 +265,6 @@ export function IntroHero({
         ref={videoRef}
         className="hero-video"
         src={videoSrc}
-        autoPlay
         muted
         playsInline
         preload="auto"
