@@ -1,9 +1,10 @@
+import getRawBody from 'raw-body'
 import {
   adminPasswordConfigured,
   adminPasswordOk,
   createAdminToken,
   setAdminCookieHeader,
-} from './lib/admin-auth.mjs'
+} from './lib/admin-auth'
 
 function bodyFromParsedJson(raw: string): Record<string, unknown> {
   try {
@@ -14,14 +15,14 @@ function bodyFromParsedJson(raw: string): Record<string, unknown> {
   }
 }
 
-/**
- * Vercel parses JSON POST bodies into `req.body` before the handler runs.
- * Do not read `req` as a stream here — that can throw or double-consume and
- * cause FUNCTION_INVOCATION_FAILED.
- */
-function readJsonBody(req: any): Record<string, unknown> {
-  const b = req.body
-  if (b == null) return {}
+function isSafeParsedBody(b: unknown): b is Record<string, unknown> {
+  if (b == null || typeof b !== 'object' || Array.isArray(b)) return false
+  if (Buffer.isBuffer(b) || b instanceof Uint8Array) return false
+  const proto = Object.getPrototypeOf(b)
+  return proto === Object.prototype || proto === null
+}
+
+function coerceParsedBody(b: unknown): Record<string, unknown> {
   if (Buffer.isBuffer(b)) {
     const raw = b.toString('utf8')
     return raw ? bodyFromParsedJson(raw) : {}
@@ -31,7 +32,30 @@ function readJsonBody(req: any): Record<string, unknown> {
     return raw ? bodyFromParsedJson(raw) : {}
   }
   if (typeof b === 'string' && b.length) return bodyFromParsedJson(b)
-  if (typeof b === 'object' && !Array.isArray(b)) return b as Record<string, unknown>
+  if (isSafeParsedBody(b)) return b
+  return {}
+}
+
+/**
+ * Prefer `req.body` (Vercel pre-parsed). If missing, read raw JSON once via `raw-body`
+ * (avoids manual stream iteration that can crash on some runtimes).
+ */
+async function readLoginBody(req: any): Promise<Record<string, unknown>> {
+  if (req.body !== undefined && req.body !== null) {
+    return coerceParsedBody(req.body)
+  }
+  try {
+    const cl = req.headers?.['content-length']
+    const len = typeof cl === 'string' ? parseInt(cl, 10) : typeof cl === 'number' ? cl : NaN
+    const rawBuf = await getRawBody(req, {
+      length: Number.isFinite(len) && len > 0 ? len : undefined,
+      limit: 32 * 1024,
+    })
+    const raw = Buffer.isBuffer(rawBuf) ? rawBuf.toString('utf8') : String(rawBuf || '')
+    if (raw.trim()) return bodyFromParsedJson(raw)
+  } catch {
+    /* stream absent, already read, or non-JSON */
+  }
   return {}
 }
 
@@ -48,7 +72,7 @@ export default async function handler(req: any, res: any) {
       return json(res, 405, { error: 'Method not allowed' })
     }
 
-    const body = readJsonBody(req)
+    const body = await readLoginBody(req)
 
     const onVercel = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
     if (onVercel && !adminPasswordConfigured()) {
@@ -79,6 +103,9 @@ export default async function handler(req: any, res: any) {
     res.end(JSON.stringify({ ok: true }))
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
-    json(res, 500, { error: `Login handler error: ${msg}` })
+    const r = res as { headersSent?: boolean; writableEnded?: boolean }
+    if (!r.headersSent && !r.writableEnded) {
+      json(res, 500, { error: `Login handler error: ${msg}` })
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { clearAdminCookieHeader } from './lib/admin-auth.mjs'
+import { clearAdminCookieHeader } from './lib/admin-auth'
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {

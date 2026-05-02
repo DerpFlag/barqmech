@@ -53,23 +53,24 @@ function productPageUrl(line, siteBase) {
   return `${siteBase}/products/${encodeURIComponent(line.categorySlug)}/${encodeURIComponent(line.slug)}`
 }
 
-/** Canonical line snapshot stored only on `orders.lines` (admin + archive). */
+/**
+ * Compact line snapshot for `orders.lines` (JSON array): stable keys, one product URL,
+ * no nulls / duplicate link fields — easier for DB, admin, and reporting.
+ */
 function buildPersistedLines(lines, orderId, siteBase) {
   return (Array.isArray(lines) ? lines : []).map((l, idx) => {
     const qty = Math.min(999, Math.max(1, Math.round(Number(l.quantity))))
     const unit = Math.round(Number(l.unitPrice))
-    return {
+    const productUrl =
+      productPageUrl(l, siteBase) || String(l.productUrl || l.product_url || '').trim() || ''
+    const line = {
       id: `${orderId}-${idx}`,
       sort_index: idx,
-      product_id: l.productId != null ? String(l.productId) : '',
-      merge_key: l.mergeKey != null ? String(l.mergeKey) : null,
       slug: String(l.slug || ''),
       category_slug: String(l.categorySlug || ''),
-      product_url: productPageUrl(l, siteBase) || String(l.productUrl || l.product_url || ''),
-      product_link:
-        productPageUrl(l, siteBase) || String(l.productUrl || l.product_url || '') || '',
+      product_url: productUrl,
       title: String(l.title || ''),
-      image_url: absoluteAssetUrl(l.imageUrl, siteBase) || String(l.imageUrl || ''),
+      image_url: absoluteAssetUrl(l.imageUrl, siteBase) || String(l.imageUrl || '').trim() || '',
       size: String(l.size || ''),
       finish: String(l.finish || ''),
       wooden_frame: Boolean(l.woodenFrame),
@@ -80,6 +81,11 @@ function buildPersistedLines(lines, orderId, siteBase) {
       line_subtotal_pkr: unit * qty,
       shipping_line_pkr: Math.round(shippingForLine({ ...l, quantity: qty })),
     }
+    const pid = l.productId != null ? String(l.productId).trim() : ''
+    if (pid) line.product_id = pid
+    const mk = l.mergeKey != null ? String(l.mergeKey).trim() : ''
+    if (mk) line.merge_key = mk
+    return line
   })
 }
 

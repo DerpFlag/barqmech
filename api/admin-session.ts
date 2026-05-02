@@ -1,4 +1,4 @@
-import { getAdminTokenFromReq, verifyAdminToken } from './lib/admin-auth.mjs'
+import { getAdminTokenFromReq, verifyAdminToken } from './lib/admin-auth'
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') {

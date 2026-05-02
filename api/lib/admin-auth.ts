@@ -4,21 +4,23 @@ export const ADMIN_COOKIE = 'barqmech_admin'
 
 const MAX_AGE_SEC = 60 * 60 * 24 * 7
 
-function sessionSecret() {
-  return (
-    process.env.ADMIN_SESSION_SECRET ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    'barqmech-admin-dev-only-set-admin-session-secret'
-  )
+function sessionSecret(): string {
+  const fromEnv =
+    (process.env.ADMIN_SESSION_SECRET && String(process.env.ADMIN_SESSION_SECRET).trim()) ||
+    (process.env.SUPABASE_SERVICE_ROLE_KEY && String(process.env.SUPABASE_SERVICE_ROLE_KEY).trim()) ||
+    ''
+  if (fromEnv.length > 0) return fromEnv
+  return 'barqmech-admin-dev-only-set-admin-session-secret'
 }
 
-export function createAdminToken() {
+export function createAdminToken(): string {
   const exp = Math.floor(Date.now() / 1000) + MAX_AGE_SEC
-  const sig = createHmac('sha256', sessionSecret()).update(String(exp)).digest('hex')
+  const key = sessionSecret()
+  const sig = createHmac('sha256', key).update(String(exp)).digest('hex')
   return `${exp}.${sig}`
 }
 
-export function verifyAdminToken(token) {
+export function verifyAdminToken(token: string | undefined | null): boolean {
   if (!token || typeof token !== 'string') return false
   const dot = token.indexOf('.')
   if (dot < 1) return false
@@ -26,7 +28,8 @@ export function verifyAdminToken(token) {
   const sig = token.slice(dot + 1)
   const exp = Number(expStr)
   if (!Number.isFinite(exp) || exp < Math.floor(Date.now() / 1000)) return false
-  const expected = createHmac('sha256', sessionSecret()).update(String(exp)).digest('hex')
+  const key = sessionSecret()
+  const expected = createHmac('sha256', key).update(String(exp)).digest('hex')
   if (sig.length !== expected.length) return false
   try {
     return timingSafeEqual(Buffer.from(sig, 'utf8'), Buffer.from(expected, 'utf8'))
@@ -35,8 +38,8 @@ export function verifyAdminToken(token) {
   }
 }
 
-export function parseCookies(cookieHeader) {
-  const out = {}
+export function parseCookies(cookieHeader: string | undefined): Record<string, string> {
+  const out: Record<string, string> = {}
   const raw = String(cookieHeader || '')
   for (const part of raw.split(';')) {
     const idx = part.indexOf('=')
@@ -48,27 +51,26 @@ export function parseCookies(cookieHeader) {
   return out
 }
 
-export function getAdminTokenFromReq(req) {
+export function getAdminTokenFromReq(req: { headers?: { cookie?: string } }): string {
   const cookies = parseCookies(req.headers?.cookie)
   return cookies[ADMIN_COOKIE] || ''
 }
 
-export function adminCookieFlags() {
+export function adminCookieFlags(): string {
   const secure = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
   const securePart = secure ? '; Secure' : ''
   return `Path=/; HttpOnly; SameSite=Lax${securePart}`
 }
 
-export function setAdminCookieHeader(token) {
+export function setAdminCookieHeader(token: string): string {
   return `${ADMIN_COOKIE}=${encodeURIComponent(token)}; ${adminCookieFlags()}; Max-Age=${MAX_AGE_SEC}`
 }
 
-export function clearAdminCookieHeader() {
+export function clearAdminCookieHeader(): string {
   return `${ADMIN_COOKIE}=; ${adminCookieFlags()}; Max-Age=0`
 }
 
-/** Strip BOM / zero-width chars; optional wrapping quotes from env pastes. */
-function normalizeAdminPassword(s) {
+function normalizeAdminPassword(s: string): string {
   let t = String(s)
     .trim()
     .replace(/^\uFEFF/, '')
@@ -79,13 +81,12 @@ function normalizeAdminPassword(s) {
   return t
 }
 
-/** True when ADMIN_PASSWORD is non-empty (after trim + invisible-char strip). */
-export function adminPasswordConfigured() {
+export function adminPasswordConfigured(): boolean {
   const raw = process.env.ADMIN_PASSWORD
   return raw != null && normalizeAdminPassword(String(raw)) !== ''
 }
 
-export function adminPasswordOk(password) {
+export function adminPasswordOk(password: string | undefined | null): boolean {
   const raw = process.env.ADMIN_PASSWORD
   const normalizedEnv = raw != null ? normalizeAdminPassword(String(raw)) : ''
   const fromEnv = normalizedEnv !== '' ? normalizedEnv : null
@@ -93,8 +94,8 @@ export function adminPasswordOk(password) {
     fromEnv ??
     (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' ? null : 'barq123mech')
   if (expected == null || expected === '') return false
-  const a = normalizeAdminPassword(password)
-  const b = normalizeAdminPassword(expected)
+  const a = normalizeAdminPassword(String(password ?? ''))
+  const b = normalizeAdminPassword(String(expected))
   if (a.length !== b.length) return false
   try {
     return timingSafeEqual(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8'))

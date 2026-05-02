@@ -4,6 +4,7 @@
   "description": "Root package for Vercel serverless /api; storefront lives in store/",
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
+    "raw-body": "^3.0.0",
     "resend": "^6.12.2"
   }
 }
