@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
-import { randomInt } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
 import { validateWithZeroBounce } from './lib/zero-bounce.mjs'
 
 const SIZE_SHIPPING = {
@@ -382,6 +382,8 @@ export default async function handler(req, res) {
 
   const supabase = createClient(supabaseUrl, supabaseKey)
   const resend = new Resend(resendKey)
+  const siteBase = resolveSiteBaseUrl(body)
+  const orderId = randomUUID()
 
   let orderCode = null
   let inserted = null
@@ -389,6 +391,7 @@ export default async function handler(req, res) {
   for (let attempt = 0; attempt < 12; attempt++) {
     orderCode = randomSixDigit()
     const row = {
+      id: orderId,
       order_code: orderCode,
       customer_name: name,
       customer_email: email,
@@ -418,7 +421,40 @@ export default async function handler(req, res) {
     return sendJson(res, 500, { error: 'Could not allocate order code' })
   }
 
-  const siteBase = resolveSiteBaseUrl(body)
+  const lineRows = lines.map((l, idx) => {
+    const qty = Math.min(999, Math.max(1, Math.round(Number(l.quantity))))
+    const unit = Math.round(Number(l.unitPrice))
+    return {
+      order_id: orderId,
+      sort_index: idx,
+      product_id: l.productId != null ? String(l.productId) : '',
+      merge_key: l.mergeKey != null ? String(l.mergeKey) : null,
+      slug: String(l.slug || ''),
+      category_slug: String(l.categorySlug || ''),
+      product_url: productPageUrl(l, siteBase) || '',
+      title: String(l.title || ''),
+      image_url: absoluteAssetUrl(l.imageUrl, siteBase) || String(l.imageUrl || ''),
+      size: String(l.size || ''),
+      finish: String(l.finish || ''),
+      wooden_frame: Boolean(l.woodenFrame),
+      led_backlight: Boolean(l.ledBacklight),
+      installation: Boolean(l.installation),
+      quantity: qty,
+      unit_price_pkr: unit,
+      line_subtotal_pkr: unit * qty,
+      shipping_line_pkr: Math.round(shippingForLine({ ...l, quantity: qty })),
+    }
+  })
+
+  const { error: linesError } = await supabase.from('order_lines').insert(lineRows)
+  if (linesError) {
+    console.error('Supabase order_lines insert error', linesError)
+    return sendJson(res, 500, {
+      error:
+        'Order header saved but line items failed. Apply migration 004_order_lines.sql in Supabase, or check logs.',
+      orderCode,
+    })
+  }
   const emailCtx = {
     greetingName: greetingFirstName(name),
     orderCode,

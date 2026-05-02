@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "db:apply-orders": "node scripts/apply-orders-migration.mjs",
+    "db:apply-sql": "node scripts/apply-sql-file.mjs",
     "dev:api": "node --env-file=.env.local scripts/dev-api-server.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

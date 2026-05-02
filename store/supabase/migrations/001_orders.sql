@@ -33,3 +33,5 @@ create policy "orders_client_insert"
 -- Optional: allow service_role full access (default when using service key)
 
 comment on table public.orders is 'COD checkout orders from barqmech store';
+
+-- After 001, apply 004_order_lines.sql for per-line columns (product_url, add-ons, etc.).

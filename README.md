@@ -29,7 +29,7 @@ Set environment variables under **Project → Settings → Environment Variables
 
 ## Database
 
-Apply SQL in Supabase (SQL Editor) from `store/supabase/migrations/`, or run `cd store && npm run db:apply-orders` if `Media/Keys.txt` exists locally (not in git).
+Apply SQL in Supabase (SQL Editor) from `store/supabase/migrations/` in order (`001`, `002` if needed, `004` for `order_lines`), or run `cd store && npm run db:apply-orders` and `npm run db:apply-sql -- supabase/migrations/004_order_lines.sql` if `Media/Keys.txt` exists locally (not in git).
 
 ## Note on `HF/`
 
