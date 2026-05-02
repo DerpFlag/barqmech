@@ -23,7 +23,9 @@ Connect this repo to [Vercel](https://vercel.com). **Leave “Root Directory” 
 | Build Command | `cd store && npm run build` |
 | Output Directory | `store/dist` |
 
-Set environment variables under **Project → Settings → Environment Variables** (see `store/.env.example`).
+Set environment variables under **Project → Settings → Environment Variables** (see `store/.env.example`). Include **`ZEROBOUNCE_API_KEY`** if you want the same email verification on checkout, contact, and demo flows (HF used only ZeroBounce; no extra spam hooks there).
+
+**Resend:** `ORDER_FROM_EMAIL` is usually plain `onboarding@resend.dev`. `RESEND_FROM_EMAIL` can be `BarqMech <onboarding@resend.dev>` (display name + space + angle brackets + address). Until you [verify a domain](https://resend.com/docs/dashboard/domains/introduction) in Resend, stay on `onboarding@resend.dev` and only send tests to allowed recipients.
 
 ## Database
 

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import { randomInt } from 'node:crypto'
+import { validateWithZeroBounce } from './lib/zero-bounce.mjs'
 
 const SIZE_SHIPPING = {
   '12 × 12 in': 800,
@@ -103,6 +104,17 @@ export default async function handler(req, res) {
 
   if (!name || !phone || !addressLine1 || !emailRegexOk(email)) {
     return sendJson(res, 400, { error: 'Invalid customer details' })
+  }
+
+  try {
+    const zb = await validateWithZeroBounce(email)
+    if (!zb.ok) {
+      const st = zb.code === 429 ? 429 : 400
+      return sendJson(res, st, { error: zb.reason })
+    }
+  } catch (e) {
+    console.error('[place-order] ZeroBounce', e)
+    return sendJson(res, 500, { error: 'Email validation service is unavailable. Please try again.' })
   }
 
   const { subtotal, shipping, grand } = recomputeTotals(lines)
