@@ -1718,6 +1718,7 @@ function CheckoutPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          origin: typeof window !== 'undefined' ? window.location.origin : '',
           customer: {
             name,
             email: mail,
