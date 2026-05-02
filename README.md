@@ -1,5 +1,7 @@
 # BarqMech
 
+Repository: [github.com/DerpFlag/barqmech](https://github.com/DerpFlag/barqmech).
+
 Vite + React storefront in [`store/`](./store/), shared assets in [`Media/`](./Media/), serverless routes in [`api/`](./api/).
 
 ## Local development
