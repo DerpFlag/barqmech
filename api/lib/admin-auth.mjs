@@ -67,21 +67,30 @@ export function clearAdminCookieHeader() {
   return `${ADMIN_COOKIE}=; ${adminCookieFlags()}; Max-Age=0`
 }
 
-/** True when ADMIN_PASSWORD is non-empty (after trim). */
+/** Strip BOM / zero-width chars that sometimes sneak into Vercel env UI pastes. */
+function normalizeAdminPassword(s) {
+  return String(s)
+    .trim()
+    .replace(/^\uFEFF/, '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+}
+
+/** True when ADMIN_PASSWORD is non-empty (after trim + invisible-char strip). */
 export function adminPasswordConfigured() {
   const raw = process.env.ADMIN_PASSWORD
-  return raw != null && String(raw).trim() !== ''
+  return raw != null && normalizeAdminPassword(String(raw)) !== ''
 }
 
 export function adminPasswordOk(password) {
   const raw = process.env.ADMIN_PASSWORD
-  const fromEnv = raw != null && String(raw).trim() !== '' ? String(raw).trim() : null
+  const normalizedEnv = raw != null ? normalizeAdminPassword(String(raw)) : ''
+  const fromEnv = normalizedEnv !== '' ? normalizedEnv : null
   const expected =
     fromEnv ??
     (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' ? null : 'barq123mech')
   if (expected == null || expected === '') return false
-  const a = String(password).trim()
-  const b = String(expected).trim()
+  const a = normalizeAdminPassword(password)
+  const b = normalizeAdminPassword(expected)
   if (a.length !== b.length) return false
   try {
     return timingSafeEqual(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8'))

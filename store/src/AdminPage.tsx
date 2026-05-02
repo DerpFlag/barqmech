@@ -187,9 +187,24 @@ export function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
       })
-      const data = (await res.json().catch(() => ({}))) as { error?: string }
+      const raw = await res.text()
+      const ct = res.headers.get('content-type') || ''
+      let data: { error?: string } = {}
+      if (ct.includes('application/json')) {
+        try {
+          data = JSON.parse(raw) as { error?: string }
+        } catch {
+          data = {}
+        }
+      }
       if (!res.ok) {
-        setLoginError(typeof data.error === 'string' ? data.error : 'Login failed')
+        const looksLikeHtml = /^\s*</.test(raw) && !ct.includes('application/json')
+        const hint = looksLikeHtml
+          ? ' The server returned a web page instead of the login API — in Vercel set Root Directory to empty (repo root), not `store`, then redeploy.'
+          : ''
+        setLoginError(
+          (typeof data.error === 'string' ? data.error : 'Login failed') + hint,
+        )
         return
       }
       setPassword('')

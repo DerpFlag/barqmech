@@ -27,6 +27,8 @@ Set environment variables under **Project → Settings → Environment Variables
 
 **Resend:** `ORDER_FROM_EMAIL` is usually plain `onboarding@resend.dev`. `RESEND_FROM_EMAIL` can be `BarqMech <onboarding@resend.dev>` (display name + space + angle brackets + address). Until you [verify a domain](https://resend.com/docs/dashboard/domains/introduction) in Resend, stay on `onboarding@resend.dev` and only send tests to allowed recipients.
 
+**Admin login (`ADMIN_PASSWORD`):** If the correct password still fails, check **Root Directory** is empty (not `store`). If it is set to `store`, Vercel never deploys the root `api/` folder, so `/api/admin-login` is not your serverless route. Redeploy after fixing. Assign `ADMIN_PASSWORD` to **Production** (and **Preview** if you test preview URLs). Leave **`VITE_API_ORIGIN` unset** on Vercel unless the storefront and API intentionally use different origins; otherwise cookies and `/api` calls should stay same-origin.
+
 ## Database
 
 Apply SQL in Supabase (SQL Editor) from `store/supabase/migrations/` in order: **`001`** (orders + `lines` jsonb), **`002`** if needed, **`005`** (`order_completed`), **`006`** (drops legacy `order_lines` — run after deploying API that only writes `orders.lines`). Or run `cd store && npm run db:apply-sql -- supabase/migrations/<file>.sql` if `Media/Keys.txt` has a Postgres URL (not in git).
