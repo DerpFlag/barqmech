@@ -3850,8 +3850,6 @@ body.intro-playing {
   --admin-text: #e9eef8;
   --admin-muted: rgba(200, 214, 238, 0.72);
   --admin-accent: #3d8bfd;
-  --admin-success: #3ecf8e;
-  --admin-warn: #f0a64d;
   min-height: 100vh;
   display: flex;
   background: var(--admin-bg);
