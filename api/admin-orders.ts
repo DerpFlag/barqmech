@@ -49,9 +49,26 @@ function requireAdmin(req: any, res: any): boolean {
   return true
 }
 
-function siteBaseUrl() {
+/** Origin for resolving relative image paths: env → admin request → Vercel host. */
+function siteBaseUrl(req: { headers?: Record<string, string | string[] | undefined> }) {
   const explicit = (process.env.PUBLIC_SITE_URL || '').trim().replace(/\/$/, '')
   if (explicit) return explicit
+
+  const h = req.headers || {}
+  const pick = (k: string) => {
+    const v = h[k]
+    return Array.isArray(v) ? v[0] : v
+  }
+  const fromHeader = String(pick('x-barqmech-origin') ?? '').trim().replace(/\/$/, '')
+  if (fromHeader.startsWith('http://') || fromHeader.startsWith('https://')) return fromHeader
+
+  const ref = String(pick('referer') ?? '').trim()
+  try {
+    if (ref) return new URL(ref).origin
+  } catch {
+    /* ignore */
+  }
+
   const v = process.env.VERCEL_URL
   if (v) return `https://${String(v).replace(/^https?:\/\//, '')}`
   return ''
@@ -61,6 +78,7 @@ function absolutizeImage(href: string, base: string) {
   if (!href) return ''
   const s = String(href)
   if (s.startsWith('http://') || s.startsWith('https://')) return s
+  if (s.startsWith('//')) return `https:${s}`
   if (!base) return s
   return base + (s.startsWith('/') ? s : `/${s}`)
 }
@@ -73,15 +91,20 @@ function productUrlFromLine(line: Record<string, unknown>, base: string) {
 }
 
 /** Build admin `order_lines` shape from `orders.lines` JSONB (new enriched rows or legacy client payload). */
-function normalizeAdminLines(raw: unknown, orderId: string) {
-  const base = siteBaseUrl()
+function normalizeAdminLines(raw: unknown, orderId: string, req: { headers?: Record<string, string | string[] | undefined> }) {
+  const base = siteBaseUrl(req)
   const arr = Array.isArray(raw) ? raw : []
   return arr.map((item, idx) => {
     const l = item as Record<string, unknown>
     const qty = Math.min(999, Math.max(1, Math.round(Number(l.quantity ?? 1))))
     const unitFromSnake = Math.round(Number(l.unit_price_pkr))
     const unitFromCamel = Math.round(Number(l.unitPrice))
-    const unit = Number.isFinite(unitFromSnake) && unitFromSnake > 0 ? unitFromSnake : unitFromCamel
+    let unit = Number.isFinite(unitFromSnake) && unitFromSnake > 0 ? unitFromSnake : unitFromCamel
+    if (!Number.isFinite(unit) || unit <= 0) {
+      const sub = Math.round(Number(l.line_subtotal_pkr ?? l.lineSubtotal ?? 0))
+      if (Number.isFinite(sub) && sub > 0 && qty > 0) unit = Math.round(sub / qty)
+    }
+    if (!Number.isFinite(unit) || unit < 0) unit = 0
     const slug = String(l.slug || '')
     const categorySlug = String(l.category_slug ?? l.categorySlug ?? '')
     const imageRaw = String(l.image_url ?? l.imageUrl ?? '')
@@ -154,7 +177,7 @@ export default async function handler(req: any, res: any) {
       const id = String((o as { id: string }).id)
       return {
         ...(o as Record<string, unknown>),
-        order_lines: normalizeAdminLines((o as { lines: unknown }).lines, id),
+        order_lines: normalizeAdminLines((o as { lines: unknown }).lines, id, req),
       }
     })
     return res.status(200).json({ orders: merged })

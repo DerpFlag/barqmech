@@ -139,7 +139,12 @@ export function AdminPage() {
     setOrdersLoading(true)
     setOrdersError(null)
     try {
-      const res = await fetch(api('/api/admin-orders'), fetchOpts)
+      const res = await fetch(api('/api/admin-orders'), {
+        ...fetchOpts,
+        headers: {
+          'X-Barqmech-Origin': typeof window !== 'undefined' ? window.location.origin : '',
+        },
+      })
       const data = (await res.json().catch(() => ({}))) as { orders?: AdminOrder[]; error?: string; hint?: string }
       if (!res.ok) {
         const base = typeof data.error === 'string' ? data.error : 'Could not load orders'
