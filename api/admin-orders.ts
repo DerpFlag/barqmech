@@ -30,25 +30,68 @@ function requireAdmin(req: any, res: any): boolean {
   return true
 }
 
-type OrderLineRow = Record<string, unknown>
+function siteBaseUrl() {
+  const explicit = (process.env.PUBLIC_SITE_URL || '').trim().replace(/\/$/, '')
+  if (explicit) return explicit
+  const v = process.env.VERCEL_URL
+  if (v) return `https://${String(v).replace(/^https?:\/\//, '')}`
+  return ''
+}
 
-function mergeLinesIntoOrders(
-  orders: Record<string, unknown>[],
-  lines: OrderLineRow[] | null
-): Record<string, unknown>[] {
-  const byOrder = new Map<string, OrderLineRow[]>()
-  for (const row of lines || []) {
-    const oid = String(row.order_id)
-    if (!byOrder.has(oid)) byOrder.set(oid, [])
-    byOrder.get(oid)!.push(row)
-  }
-  for (const arr of byOrder.values()) {
-    arr.sort((a, b) => Number(a.sort_index) - Number(b.sort_index))
-  }
-  return orders.map((o) => ({
-    ...o,
-    order_lines: byOrder.get(String(o.id)) || [],
-  }))
+function absolutizeImage(href: string, base: string) {
+  if (!href) return ''
+  const s = String(href)
+  if (s.startsWith('http://') || s.startsWith('https://')) return s
+  if (!base) return s
+  return base + (s.startsWith('/') ? s : `/${s}`)
+}
+
+function productUrlFromLine(line: Record<string, unknown>, base: string) {
+  const slug = String(line.slug || '')
+  const cat = String(line.category_slug ?? line.categorySlug ?? '')
+  if (!base || !slug || !cat) return String(line.product_url || '')
+  return `${base}/products/${encodeURIComponent(cat)}/${encodeURIComponent(slug)}`
+}
+
+/** Build admin `order_lines` shape from `orders.lines` JSONB (new enriched rows or legacy client payload). */
+function normalizeAdminLines(raw: unknown, orderId: string) {
+  const base = siteBaseUrl()
+  const arr = Array.isArray(raw) ? raw : []
+  return arr.map((item, idx) => {
+    const l = item as Record<string, unknown>
+    const qty = Math.min(999, Math.max(1, Math.round(Number(l.quantity ?? 1))))
+    const unitFromSnake = Math.round(Number(l.unit_price_pkr))
+    const unitFromCamel = Math.round(Number(l.unitPrice))
+    const unit = Number.isFinite(unitFromSnake) && unitFromSnake > 0 ? unitFromSnake : unitFromCamel
+    const slug = String(l.slug || '')
+    const categorySlug = String(l.category_slug ?? l.categorySlug ?? '')
+    const imageRaw = String(l.image_url ?? l.imageUrl ?? '')
+    const existingProductUrl = String(l.product_url || '')
+    const productUrl = existingProductUrl || productUrlFromLine(l, base)
+    const imageUrl = absolutizeImage(imageRaw, base) || imageRaw
+    const lineSub = Number(l.line_subtotal_pkr)
+    const lineSubOk = Number.isFinite(lineSub) && lineSub > 0 ? lineSub : unit * qty
+    const shipLine = Math.round(Number(l.shipping_line_pkr ?? 0))
+    return {
+      id: String(l.id || `${orderId}-${idx}`),
+      order_id: orderId,
+      sort_index: Number(l.sort_index ?? idx),
+      title: String(l.title || ''),
+      image_url: imageUrl,
+      product_url: productUrl,
+      slug,
+      category_slug: categorySlug,
+      quantity: qty,
+      unit_price_pkr: unit,
+      line_subtotal_pkr: lineSubOk,
+      shipping_line_pkr: shipLine,
+      size: String(l.size || ''),
+      finish: String(l.finish || ''),
+      wooden_frame: Boolean(l.wooden_frame ?? l.woodenFrame),
+      led_backlight: Boolean(l.led_backlight ?? l.ledBacklight),
+      installation: Boolean(l.installation),
+    }
+  })
 }
 
 export default async function handler(req: any, res: any) {
@@ -75,23 +118,17 @@ export default async function handler(req: any, res: any) {
 
     if (e1) {
       console.error('[admin-orders] list', e1)
-      return res.status(500).json({ error: e1.message || 'Failed to load orders' })
+      return res.status(500).json({ error: friendlyDbError(e1) })
     }
 
     const list = orders || []
-    const ids = list.map((o) => o.id as string).filter(Boolean)
-    if (ids.length === 0) {
-      return res.status(200).json({ orders: [] })
-    }
-
-    const { data: lineRows, error: e2 } = await supabase.from('order_lines').select('*').in('order_id', ids)
-
-    if (e2) {
-      console.error('[admin-orders] lines', e2)
-      return res.status(500).json({ error: e2.message || 'Failed to load order line items' })
-    }
-
-    const merged = mergeLinesIntoOrders(list as Record<string, unknown>[], (lineRows || []) as OrderLineRow[])
+    const merged = list.map((o) => {
+      const id = String((o as { id: string }).id)
+      return {
+        ...(o as Record<string, unknown>),
+        order_lines: normalizeAdminLines((o as { lines: unknown }).lines, id),
+      }
+    })
     return res.status(200).json({ orders: merged })
   }
 

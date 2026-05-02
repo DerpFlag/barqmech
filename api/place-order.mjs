@@ -53,6 +53,34 @@ function productPageUrl(line, siteBase) {
   return `${siteBase}/products/${encodeURIComponent(line.categorySlug)}/${encodeURIComponent(line.slug)}`
 }
 
+/** Canonical line snapshot stored only on `orders.lines` (admin + archive). */
+function buildPersistedLines(lines, orderId, siteBase) {
+  return (Array.isArray(lines) ? lines : []).map((l, idx) => {
+    const qty = Math.min(999, Math.max(1, Math.round(Number(l.quantity))))
+    const unit = Math.round(Number(l.unitPrice))
+    return {
+      id: `${orderId}-${idx}`,
+      sort_index: idx,
+      product_id: l.productId != null ? String(l.productId) : '',
+      merge_key: l.mergeKey != null ? String(l.mergeKey) : null,
+      slug: String(l.slug || ''),
+      category_slug: String(l.categorySlug || ''),
+      product_url: productPageUrl(l, siteBase) || '',
+      title: String(l.title || ''),
+      image_url: absoluteAssetUrl(l.imageUrl, siteBase) || String(l.imageUrl || ''),
+      size: String(l.size || ''),
+      finish: String(l.finish || ''),
+      wooden_frame: Boolean(l.woodenFrame),
+      led_backlight: Boolean(l.ledBacklight),
+      installation: Boolean(l.installation),
+      quantity: qty,
+      unit_price_pkr: unit,
+      line_subtotal_pkr: unit * qty,
+      shipping_line_pkr: Math.round(shippingForLine({ ...l, quantity: qty })),
+    }
+  })
+}
+
 function greetingFirstName(fullName) {
   const first = String(fullName || '')
     .trim()
@@ -340,6 +368,8 @@ export default async function handler(req, res) {
   let orderCode = null
   let inserted = null
 
+  const persistedLines = buildPersistedLines(lines, orderId, siteBase)
+
   for (let attempt = 0; attempt < 12; attempt++) {
     orderCode = randomSixDigit()
     const row = {
@@ -351,7 +381,7 @@ export default async function handler(req, res) {
       address_line1: addressLine1,
       city: city || null,
       notes: notes || null,
-      lines,
+      lines: persistedLines,
       subtotal_pkr: subtotal,
       shipping_pkr: shipping,
       grand_total_pkr: grand,
@@ -373,40 +403,6 @@ export default async function handler(req, res) {
     return sendJson(res, 500, { error: 'Could not allocate order code' })
   }
 
-  const lineRows = lines.map((l, idx) => {
-    const qty = Math.min(999, Math.max(1, Math.round(Number(l.quantity))))
-    const unit = Math.round(Number(l.unitPrice))
-    return {
-      order_id: orderId,
-      sort_index: idx,
-      product_id: l.productId != null ? String(l.productId) : '',
-      merge_key: l.mergeKey != null ? String(l.mergeKey) : null,
-      slug: String(l.slug || ''),
-      category_slug: String(l.categorySlug || ''),
-      product_url: productPageUrl(l, siteBase) || '',
-      title: String(l.title || ''),
-      image_url: absoluteAssetUrl(l.imageUrl, siteBase) || String(l.imageUrl || ''),
-      size: String(l.size || ''),
-      finish: String(l.finish || ''),
-      wooden_frame: Boolean(l.woodenFrame),
-      led_backlight: Boolean(l.ledBacklight),
-      installation: Boolean(l.installation),
-      quantity: qty,
-      unit_price_pkr: unit,
-      line_subtotal_pkr: unit * qty,
-      shipping_line_pkr: Math.round(shippingForLine({ ...l, quantity: qty })),
-    }
-  })
-
-  const { error: linesError } = await supabase.from('order_lines').insert(lineRows)
-  if (linesError) {
-    console.error('Supabase order_lines insert error', linesError)
-    return sendJson(res, 500, {
-      error:
-        'Order header saved but line items failed. Apply migration 004_order_lines.sql in Supabase, or check logs.',
-      orderCode,
-    })
-  }
   const emailCtx = {
     greetingName: greetingFirstName(name),
     orderCode,

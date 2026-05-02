@@ -34,4 +34,4 @@ create policy "orders_client_insert"
 
 comment on table public.orders is 'COD checkout orders from barqmech store';
 
--- After 001, apply 004_order_lines.sql for per-line columns (product_url, add-ons, etc.).
+-- Line items are stored on orders.lines (JSONB, enriched at checkout). Optional: 006_drop_order_lines.sql removes legacy order_lines table.
