@@ -142,7 +142,7 @@ function renderLineItemBlock(l, siteBase) {
 function emailFooterBlock(siteBase) {
   const logoSrc = siteBase ? `${siteBase}/barqmech-email-logo.png` : ''
   const logoHtml = logoSrc
-    ? `<img src="${escapeHtml(logoSrc)}" alt="BarqMech" width="140" style="max-width:140px;height:auto;display:block;margin:16px auto 0;border:0;" />`
+    ? `<img src="${escapeHtml(logoSrc)}" alt="BarqMech" width="240" style="max-width:240px;width:100%;height:auto;display:block;margin:16px auto 0;border:0;" />`
     : ''
   return `
   <tr>
