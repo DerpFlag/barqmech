@@ -1747,7 +1747,12 @@ function CheckoutPage() {
       clearCart()
       navigate(`/checkout/success?code=${encodeURIComponent(data.orderCode)}`, {
         replace: true,
-        state: { customerEmail: mail },
+        state: {
+          customerEmail: mail,
+          grandTotal,
+          subtotal,
+          shippingTotal,
+        },
       })
     } catch {
       setSubmitting(false)
@@ -2001,15 +2006,29 @@ function CheckoutPage() {
   )
 }
 
+type CheckoutSuccessState = {
+  customerEmail?: string
+  grandTotal?: number
+  subtotal?: number
+  shippingTotal?: number
+}
+
 function CheckoutSuccessPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const location = useLocation()
   const code = params.get('code')?.trim() ?? ''
+  const successState = (location.state as CheckoutSuccessState | null) ?? {}
   const customerEmail =
-    typeof (location.state as { customerEmail?: string } | null)?.customerEmail === 'string'
-      ? (location.state as { customerEmail: string }).customerEmail.trim()
-      : ''
+    typeof successState.customerEmail === 'string' ? successState.customerEmail.trim() : ''
+  const grandTotal =
+    typeof successState.grandTotal === 'number' && Number.isFinite(successState.grandTotal) ? successState.grandTotal : null
+  const subtotalOk =
+    typeof successState.subtotal === 'number' && Number.isFinite(successState.subtotal) ? successState.subtotal : null
+  const shippingOk =
+    typeof successState.shippingTotal === 'number' && Number.isFinite(successState.shippingTotal)
+      ? successState.shippingTotal
+      : null
   const [searchQuery, setSearchQuery] = useState('')
   const validCode = /^\d{6}$/.test(code)
 
@@ -2062,18 +2081,46 @@ function CheckoutSuccessPage() {
         </div>
         {validCode ? (
           <div className="checkout-success checkout-panel">
-            <h1 className="checkout-heading">Thank you</h1>
+            <h1 className="checkout-heading">Thank you for your order</h1>
+            <p className="checkout-success-lead">
+              We&apos;re grateful you chose BarqMech. Your order is confirmed and our team will begin preparing it for you.
+            </p>
             <p>
-              Your order code is <strong className="checkout-order-code">{code}</strong>. We saved your order and sent a
-              confirmation{customerEmail ? (
+              Your order code is <strong className="checkout-order-code">{code}</strong>. Keep it handy for any follow-up.
+              {customerEmail ? (
                 <>
                   {' '}
-                  to <strong>{customerEmail}</strong>
+                  We&apos;ve sent a detailed confirmation to <strong>{customerEmail}</strong>.
                 </>
-              ) : null}
-              .
+              ) : (
+                <> A confirmation email is on its way.</>
+              )}
             </p>
-            <p className="checkout-shipping-note">Pay by cash on delivery when your order arrives.</p>
+            {grandTotal != null ? (
+              <div className="checkout-success-cod-card" role="region" aria-label="Payment summary">
+                <p className="checkout-success-cod-label">Amount due when your order arrives</p>
+                <p className="checkout-success-cod-amount">{formatPriceNoDecimals(grandTotal)}</p>
+                {subtotalOk != null && shippingOk != null ? (
+                  <p className="checkout-success-cod-breakdown">
+                    Products {formatPriceNoDecimals(subtotalOk)} + shipping {formatPriceNoDecimals(shippingOk)} (cash on
+                    delivery — nothing charged online).
+                  </p>
+                ) : (
+                  <p className="checkout-success-cod-breakdown">
+                    Cash on delivery: please have this total ready for the courier. No payment is taken on the website.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="checkout-shipping-note">
+                Cash on delivery: you&apos;ll pay when your order arrives. Check your email for the full total and line
+                items.
+              </p>
+            )}
+            <p className="checkout-success-outro">
+              We&apos;d love to welcome you back soon — browse new pieces anytime, and tell friends if you enjoyed the
+              experience.
+            </p>
             <div className="checkout-success-actions">
               <Link to="/products" className="mosaic-discover-btn">
                 Continue shopping

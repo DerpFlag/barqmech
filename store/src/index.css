@@ -3769,6 +3769,54 @@ body.intro-playing {
   color: #ffffff;
 }
 
+.checkout-success-lead {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+  color: rgba(210, 222, 245, 0.95);
+  line-height: 1.55;
+}
+
+.checkout-success-cod-card {
+  margin: 1.1rem 0 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(119, 182, 255, 0.45);
+  background: rgba(10, 22, 48, 0.55);
+  text-align: center;
+}
+
+.checkout-success-cod-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(180, 210, 255, 0.9);
+}
+
+.checkout-success-cod-amount {
+  margin: 0 0 0.45rem;
+  font-size: 1.45rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
+  letter-spacing: 0.04em;
+}
+
+.checkout-success-cod-breakdown {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(200, 214, 240, 0.88);
+  line-height: 1.45;
+}
+
+.checkout-success-outro {
+  margin: 0.85rem 0 0;
+  font-size: 0.88rem;
+  color: rgba(200, 214, 240, 0.9);
+  line-height: 1.55;
+}
+
 .checkout-success p {
   margin: 0 0 0.65rem;
   color: rgba(200, 214, 240, 0.88);
