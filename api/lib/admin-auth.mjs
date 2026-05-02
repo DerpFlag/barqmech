@@ -67,12 +67,16 @@ export function clearAdminCookieHeader() {
   return `${ADMIN_COOKIE}=; ${adminCookieFlags()}; Max-Age=0`
 }
 
-/** Strip BOM / zero-width chars that sometimes sneak into Vercel env UI pastes. */
+/** Strip BOM / zero-width chars; optional wrapping quotes from env pastes. */
 function normalizeAdminPassword(s) {
-  return String(s)
+  let t = String(s)
     .trim()
     .replace(/^\uFEFF/, '')
     .replace(/[\u200B-\u200D\uFEFF]/g, '')
+  if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) {
+    t = t.slice(1, -1)
+  }
+  return t
 }
 
 /** True when ADMIN_PASSWORD is non-empty (after trim + invisible-char strip). */

@@ -188,23 +188,35 @@ export function AdminPage() {
         body: JSON.stringify({ password }),
       })
       const raw = await res.text()
-      const ct = res.headers.get('content-type') || ''
-      let data: { error?: string } = {}
-      if (ct.includes('application/json')) {
+      const ct = (res.headers.get('content-type') || '').toLowerCase()
+      let data: { error?: string; message?: string } = {}
+      const tryParseJson =
+        ct.includes('application/json') || /^\s*[\[{]/.test(raw)
+      if (tryParseJson && raw.trim()) {
         try {
-          data = JSON.parse(raw) as { error?: string }
+          data = JSON.parse(raw) as { error?: string; message?: string }
         } catch {
           data = {}
         }
       }
+      const apiMessage = (() => {
+        if (typeof data.error === 'string' && data.error.trim()) return data.error.trim()
+        if (typeof data.message === 'string' && data.message.trim()) return data.message.trim()
+        const nested = (data as { error?: { message?: string } }).error
+        if (nested && typeof nested === 'object' && typeof nested.message === 'string') {
+          return nested.message.trim()
+        }
+        return ''
+      })()
       if (!res.ok) {
-        const looksLikeHtml = /^\s*</.test(raw) && !ct.includes('application/json')
+        const looksLikeHtml = /^\s*</.test(raw) && !tryParseJson
         const hint = looksLikeHtml
           ? ' The server returned a web page instead of the login API — in Vercel set Root Directory to empty (repo root), not `store`, then redeploy.'
           : ''
-        setLoginError(
-          (typeof data.error === 'string' ? data.error : 'Login failed') + hint,
-        )
+        let msg = apiMessage
+        if (!msg && raw.trim() && raw.length < 400 && !/^\s*</.test(raw)) msg = raw.trim()
+        if (!msg) msg = `Login failed (HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ''})`
+        setLoginError(msg + hint)
         return
       }
       setPassword('')
