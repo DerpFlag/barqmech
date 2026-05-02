@@ -32,6 +32,7 @@ import catWalls3 from '../../Media/category pics/Walls, Windows & Ceiling Panels
 import { IntroHero } from './IntroHero.tsx'
 import { HexagonBackground } from './HexagonBackground.tsx'
 import { CartProvider, TopbarCartButton, useCart } from './cart/CartContext.tsx'
+import { getEmailFieldError, getPakistanPhoneFieldError } from './lib/contactFormValidation.ts'
 
 const featuredCategories = ['Islamic', 'Artwork', 'Panels', 'Misc'] as const
 type FeaturedCategory = (typeof featuredCategories)[number]
@@ -111,12 +112,6 @@ const galleryTileRouteCategory: Record<string, FeaturedCategory> = {
   'walls-windows-ceiling-panels': 'Panels',
 }
 
-function isValidEmail(value: string) {
-  const email = value.trim()
-  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]{2,})+$/
-  return emailRegex.test(email) && !email.includes('..')
-}
-
 function parsePrice(value: string) {
   const numeric = Number(value.replace(/[^0-9.]/g, ''))
   return Number.isFinite(numeric) ? numeric : 0
@@ -153,6 +148,7 @@ function HomePage() {
   const [demoStatus, setDemoStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [contactSubmitting, setContactSubmitting] = useState(false)
   const [contactStatus, setContactStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [contactFieldErrors, setContactFieldErrors] = useState<{ email?: string; phone?: string }>({})
   const [galleryIndexes, setGalleryIndexes] = useState<Record<string, number>>(Object.fromEntries(galleryTiles.map((tile) => [tile.id, 0])))
   const [featuredIndexes, setFeaturedIndexes] = useState<Record<FeaturedCategory, number>>({ Islamic: 0, Artwork: 0, Panels: 0, Misc: 0 })
   const [featuredImageIndexes, setFeaturedImageIndexes] = useState<Record<string, number>>(Object.fromEntries(featuredItems.map((item) => [item.id, 0])))
@@ -232,8 +228,8 @@ function HomePage() {
     const run = async () => {
       if (demoSubmitting) return
       const normalized = demoEmail.trim()
-      if (!normalized) return setDemoStatus({ type: 'error', message: 'Please enter your email.' })
-      if (!isValidEmail(normalized)) return setDemoStatus({ type: 'error', message: 'Please enter a valid email address.' })
+      const emailErr = getEmailFieldError(normalized)
+      if (emailErr) return setDemoStatus({ type: 'error', message: emailErr })
       setDemoSubmitting(true)
       setDemoStatus(null)
       try {
@@ -266,21 +262,42 @@ function HomePage() {
     const email = String(formData.get('email') ?? '').trim()
     const subject = String(formData.get('subject') ?? '').trim()
     const message = String(formData.get('message') ?? '').trim()
-    if (!name || !email || !subject || !message) return setContactStatus({ type: 'error', message: 'Please fill all required fields.' })
-    if (!isValidEmail(email)) return setContactStatus({ type: 'error', message: 'Please enter a valid email address.' })
+    const emailErr = getEmailFieldError(email)
+    const phoneErr = getPakistanPhoneFieldError(subject)
+    setContactFieldErrors({
+      ...(emailErr ? { email: emailErr } : {}),
+      ...(phoneErr ? { phone: phoneErr } : {}),
+    })
+    if (emailErr || phoneErr) {
+      setContactStatus(null)
+      return
+    }
+    if (!name.trim() || !message.trim()) {
+      setContactStatus({ type: 'error', message: 'Please fill in your name and message.' })
+      return
+    }
     setContactSubmitting(true)
     setContactStatus(null)
+    setContactFieldErrors({})
     try {
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, subject, message }),
+        body: JSON.stringify({
+          name,
+          email,
+          subject,
+          message,
+          origin: typeof window !== 'undefined' ? window.location.origin : '',
+        }),
       })
       const result = (await response.json().catch(() => ({}))) as { error?: string }
       if (!response.ok) throw new Error(result.error || 'Failed to send message.')
       form.reset()
+      setContactFieldErrors({})
       setContactStatus({ type: 'success', message: 'Message sent successfully. We will get back to you soon.' })
     } catch (error) {
+      setContactFieldErrors({})
       setContactStatus({ type: 'error', message: error instanceof Error ? error.message : 'Failed to send message.' })
     } finally {
       setContactSubmitting(false)
@@ -387,8 +404,24 @@ function HomePage() {
                 <h3>Send Us a Message</h3><p>Fill out the form below and we&apos;ll get back to you as soon as possible.</p>
                 <form className="contact-form" onSubmit={handleContactSubmit}>
                   <label>Name *<input type="text" name="name" placeholder="Your name" required /></label>
-                  <label>Email *<input type="email" name="email" placeholder="your@email.com" required /></label>
-                  <label>Contact *<input type="tel" name="subject" placeholder="Mobile number" required /></label>
+                  <label>
+                    Email *
+                    <input type="email" name="email" placeholder="your@email.com" required />
+                    {contactFieldErrors.email ? (
+                      <span className="form-field-error" role="alert">
+                        {contactFieldErrors.email}
+                      </span>
+                    ) : null}
+                  </label>
+                  <label>
+                    Contact *
+                    <input type="tel" name="subject" placeholder="03XX XXXXXXX or +92…" required />
+                    {contactFieldErrors.phone ? (
+                      <span className="form-field-error" role="alert">
+                        {contactFieldErrors.phone}
+                      </span>
+                    ) : null}
+                  </label>
                   <label>Message *<textarea name="message" placeholder="Tell us about your project or inquiry..." rows={6} required /></label>
                   <button type="submit" className="contact-send-btn" disabled={contactSubmitting}>{contactSubmitting ? 'Sending...' : 'Send Message'}</button>
                   {contactStatus && <p className={`contact-status ${contactStatus.type}`}>{contactStatus.message}</p>}
@@ -426,13 +459,14 @@ function useShopContactDemo() {
   const [demoStatus, setDemoStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [contactSubmitting, setContactSubmitting] = useState(false)
   const [contactStatus, setContactStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [contactFieldErrors, setContactFieldErrors] = useState<{ email?: string; phone?: string }>({})
 
   const openCalendly = () => {
     const run = async () => {
       if (demoSubmitting) return
       const normalized = demoEmail.trim()
-      if (!normalized) return setDemoStatus({ type: 'error', message: 'Please enter your email.' })
-      if (!isValidEmail(normalized)) return setDemoStatus({ type: 'error', message: 'Please enter a valid email address.' })
+      const emailErr = getEmailFieldError(normalized)
+      if (emailErr) return setDemoStatus({ type: 'error', message: emailErr })
       setDemoSubmitting(true)
       setDemoStatus(null)
       try {
@@ -465,22 +499,42 @@ function useShopContactDemo() {
     const email = String(formData.get('email') ?? '').trim()
     const subject = String(formData.get('subject') ?? '').trim()
     const message = String(formData.get('message') ?? '').trim()
-    if (!name || !email || !subject || !message)
-      return setContactStatus({ type: 'error', message: 'Please fill all required fields.' })
-    if (!isValidEmail(email)) return setContactStatus({ type: 'error', message: 'Please enter a valid email address.' })
+    const emailErr = getEmailFieldError(email)
+    const phoneErr = getPakistanPhoneFieldError(subject)
+    setContactFieldErrors({
+      ...(emailErr ? { email: emailErr } : {}),
+      ...(phoneErr ? { phone: phoneErr } : {}),
+    })
+    if (emailErr || phoneErr) {
+      setContactStatus(null)
+      return
+    }
+    if (!name.trim() || !message.trim()) {
+      setContactStatus({ type: 'error', message: 'Please fill in your name and message.' })
+      return
+    }
     setContactSubmitting(true)
     setContactStatus(null)
+    setContactFieldErrors({})
     try {
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, subject, message }),
+        body: JSON.stringify({
+          name,
+          email,
+          subject,
+          message,
+          origin: typeof window !== 'undefined' ? window.location.origin : '',
+        }),
       })
       const result = (await response.json().catch(() => ({}))) as { error?: string }
       if (!response.ok) throw new Error(result.error || 'Failed to send message.')
       form.reset()
+      setContactFieldErrors({})
       setContactStatus({ type: 'success', message: 'Message sent successfully. We will get back to you soon.' })
     } catch (error) {
+      setContactFieldErrors({})
       setContactStatus({ type: 'error', message: error instanceof Error ? error.message : 'Failed to send message.' })
     } finally {
       setContactSubmitting(false)
@@ -496,6 +550,7 @@ function useShopContactDemo() {
     demoStatus,
     contactSubmitting,
     contactStatus,
+    contactFieldErrors,
     handleContactSubmit,
     openCalendly,
   }
@@ -519,6 +574,7 @@ function OrderDesignContactFooter({
     demoStatus,
     contactSubmitting,
     contactStatus,
+    contactFieldErrors,
     handleContactSubmit,
     openCalendly,
   } = shopContact
@@ -546,10 +602,20 @@ function OrderDesignContactFooter({
               <label>
                 Email *
                 <input type="email" name="email" placeholder="your@email.com" required />
+                {contactFieldErrors.email ? (
+                  <span className="form-field-error" role="alert">
+                    {contactFieldErrors.email}
+                  </span>
+                ) : null}
               </label>
               <label>
                 Contact *
-                <input type="tel" name="subject" placeholder="Mobile number" required />
+                <input type="tel" name="subject" placeholder="03XX XXXXXXX or +92…" required />
+                {contactFieldErrors.phone ? (
+                  <span className="form-field-error" role="alert">
+                    {contactFieldErrors.phone}
+                  </span>
+                ) : null}
               </label>
               <label>
                 Message *
@@ -1674,6 +1740,8 @@ function CheckoutPage() {
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [emailFieldError, setEmailFieldError] = useState<string | null>(null)
+  const [phoneFieldError, setPhoneFieldError] = useState<string | null>(null)
 
   const shippingByLine = useMemo(
     () => lines.map((l) => ({ line: l, shipUnit: shippingPerUnitForSize(l.size), lineShip: shippingPerUnitForSize(l.size) * l.quantity })),
@@ -1694,9 +1762,22 @@ function CheckoutPage() {
     const tel = phone.trim()
     const addr = addressLine1.trim()
     const c = city.trim()
-    if (!name || !tel || !addr) return
-    if (!isValidEmail(mail)) return
     setSubmitError(null)
+    const mailErr = getEmailFieldError(mail)
+    const telErr = getPakistanPhoneFieldError(tel)
+    setEmailFieldError(mailErr ?? null)
+    setPhoneFieldError(telErr ?? null)
+    if (mailErr || telErr) return
+    if (!name) {
+      setSubmitError('Please enter your full name.')
+      return
+    }
+    if (!addr) {
+      setSubmitError('Please enter your street address.')
+      return
+    }
+    setEmailFieldError(null)
+    setPhoneFieldError(null)
     setSubmitting(true)
     const payloadLines = lines.map((l) => ({
       mergeKey: l.mergeKey,
@@ -1870,10 +1951,28 @@ function CheckoutPage() {
                 <label>
                   Email *
                   <input type="email" name="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  {emailFieldError ? (
+                    <span className="form-field-error" role="alert">
+                      {emailFieldError}
+                    </span>
+                  ) : null}
                 </label>
                 <label>
                   Phone *
-                  <input type="tel" name="phone" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                  <input
+                    type="tel"
+                    name="phone"
+                    autoComplete="tel"
+                    placeholder="03XX XXXXXXX or +92…"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                  />
+                  {phoneFieldError ? (
+                    <span className="form-field-error" role="alert">
+                      {phoneFieldError}
+                    </span>
+                  ) : null}
                 </label>
                 <label>
                   Street address *

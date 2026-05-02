@@ -1651,6 +1651,15 @@ body.intro-playing {
   color: #ff9ba1;
 }
 
+.form-field-error {
+  display: block;
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  font-weight: 600;
+  color: #ff9ba1;
+}
+
 .site-footer {
   width: 100%;
   padding: 1.25rem clamp(1rem, 3.5vw, 2.6rem) 1.7rem;
