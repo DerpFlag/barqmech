@@ -6,7 +6,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 function friendlyDbError(err: { message?: string; code?: string } | null) {
   const msg = String(err?.message || '')
   const code = String(err?.code || '')
-  if (/order_completed|order_completed_at|order_date|product_links|column.*does not exist|PGRST204/i.test(msg) || code === '42703') {
+  if (/order_completed|order_completed_at|order_date|column.*does not exist|PGRST204/i.test(msg) || code === '42703') {
     return 'Supabase schema may be behind this API. Run migrations from store/supabase/migrations/ (005_order_completed.sql, 007_order_dates_product_links_view.sql, etc.).'
   }
   return msg || 'Database error'
@@ -114,7 +114,7 @@ export default async function handler(req: any, res: any) {
     const { data: orders, error: e1 } = await supabase
       .from('orders')
       .select(
-        'id, order_code, customer_name, customer_email, customer_phone, address_line1, city, notes, lines, subtotal_pkr, shipping_pkr, grand_total_pkr, payment_method, created_at, order_completed'
+        'id, order_code, customer_name, customer_email, customer_phone, address_line1, city, notes, lines, subtotal_pkr, shipping_pkr, grand_total_pkr, payment_method, created_at, order_date, order_completed, order_completed_at',
       )
       .order('created_at', { ascending: false })
 

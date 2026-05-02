@@ -49,7 +49,6 @@ type AdminOrder = {
   order_date?: string
   order_completed?: boolean
   order_completed_at?: string | null
-  product_links?: unknown
   order_lines?: OrderLine[]
 }
 

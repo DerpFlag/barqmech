@@ -34,4 +34,4 @@ create policy "orders_client_insert"
 
 comment on table public.orders is 'COD checkout orders from barqmech store';
 
--- Line items are stored on orders.lines (JSONB, enriched at checkout: product_url, product_link, image_url, etc.). Optional: 006_drop_order_lines.sql removes legacy order_lines table. See 007 for order_date, product_links, order_completed_at, and order_products view.
+-- Line items are stored on orders.lines (JSONB, enriched at checkout: product_url, image_url, etc.). Optional: 006_drop_order_lines.sql removes legacy order_lines table. See 007 for order_date, order_completed_at, and order_products view.

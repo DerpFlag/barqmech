@@ -14,31 +14,8 @@ alter table public.orders
 
 comment on column public.orders.order_date is 'Same as created_at; stored for clarity in joins and spreadsheets.';
 
--- JSON array of product page URLs derived from orders.lines (each line should include product_url / product_link).
-alter table public.orders
-  add column if not exists product_links jsonb generated always as (
-    coalesce(
-      (
-        select jsonb_agg(
-                 coalesce(
-                   nullif(elem->>'product_url', ''),
-                   nullif(elem->>'product_link', ''),
-                   nullif(elem->>'productUrl', ''),
-                   ''
-                 )
-               )
-        from jsonb_array_elements(
-               case
-                 when jsonb_typeof(coalesce(lines, 'null'::jsonb)) = 'array' then coalesce(lines, '[]'::jsonb)
-                 else '[]'::jsonb
-               end
-             ) as elem
-      ),
-      '[]'::jsonb
-    )
-  ) stored;
-
-comment on column public.orders.product_links is 'JSON array of product page URLs from lines (generated).';
+-- Note: Postgres disallows subqueries in GENERATED columns, so we do not store product_links on orders.
+-- The order_products view below exposes order_product_urls aggregated from orders.lines.
 
 -- One row per cart line: separate columns + order_code for joining to orders.
 create or replace view public.order_products as
@@ -49,7 +26,25 @@ select
   o.order_date,
   o.order_completed,
   o.order_completed_at,
-  o.product_links as order_product_urls,
+  (
+    select coalesce(
+      jsonb_agg(
+        coalesce(
+          nullif(e->>'product_url', ''),
+          nullif(e->>'product_link', ''),
+          nullif(e->>'productUrl', ''),
+          ''
+        )
+      ),
+      '[]'::jsonb
+    )
+    from jsonb_array_elements(
+      case
+        when jsonb_typeof(coalesce(o.lines, 'null'::jsonb)) = 'array' then coalesce(o.lines, '[]'::jsonb)
+        else '[]'::jsonb
+      end
+    ) as e
+  ) as order_product_urls,
   elem->>'id' as line_id,
   coalesce(nullif(elem->>'sort_index', '')::integer, 0) as sort_index,
   elem->>'product_id' as product_id,
