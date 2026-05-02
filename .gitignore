@@ -1,0 +1,44 @@
+# Secrets (never commit)
+Media/Keys.txt
+
+# CAD / source art not imported by the storefront (very large)
+Media/Finalized/
+
+# Folders under Media not referenced by store/src (keep repo lean)
+Media/Cieling Panels/
+Media/Custom (cell wall, racks, cdm, printer box, bbq etc)/
+Media/logo/
+Media/Metal Arts/
+Media/Walls/
+
+# Large sibling project not required for the Vite store (omit to shrink clone; remove this line to track HF)
+/HF/
+
+# Dependencies & build outputs
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/.vite/
+
+# Env files (examples are whitelisted below)
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE / local tooling
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.cursor/
+
+# Vercel
+.vercel/
+
+# TypeScript build info
+**/.tmp/
+**/*.tsbuildinfo
