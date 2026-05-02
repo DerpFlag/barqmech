@@ -140,9 +140,11 @@ export function AdminPage() {
     setOrdersError(null)
     try {
       const res = await fetch(api('/api/admin-orders'), fetchOpts)
-      const data = (await res.json().catch(() => ({}))) as { orders?: AdminOrder[]; error?: string }
+      const data = (await res.json().catch(() => ({}))) as { orders?: AdminOrder[]; error?: string; hint?: string }
       if (!res.ok) {
-        setOrdersError(typeof data.error === 'string' ? data.error : 'Could not load orders')
+        const base = typeof data.error === 'string' ? data.error : 'Could not load orders'
+        const hint = typeof data.hint === 'string' ? ` ${data.hint}` : ''
+        setOrdersError(base + hint)
         setOrders([])
         return
       }
@@ -159,10 +161,6 @@ export function AdminPage() {
   useEffect(() => {
     if (!sessionOk) return
     void loadOrders()
-    const t = window.setInterval(() => {
-      void loadOrders()
-    }, 8000)
-    return () => window.clearInterval(t)
   }, [sessionOk, loadOrders])
 
   const stats = useMemo(() => {
@@ -409,7 +407,7 @@ export function AdminPage() {
               </button>
             ))}
           </div>
-          <p className="admin-toolbar-hint">Auto-refresh every 8s while this tab is open.</p>
+          <p className="admin-toolbar-hint">Use Refresh to reload orders from the server.</p>
         </div>
 
         {ordersError ? (

@@ -12,13 +12,32 @@ function friendlyDbError(err: { message?: string; code?: string } | null) {
   return msg || 'Database error'
 }
 
+function serviceEnv(): { url: string; key: string; missing: string[] } {
+  const url = String(process.env.SUPABASE_URL ?? '').trim()
+  const key = String(process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim()
+  const missing: string[] = []
+  if (!url) missing.push('SUPABASE_URL')
+  if (!key) missing.push('SUPABASE_SERVICE_ROLE_KEY')
+  return { url, key, missing }
+}
+
 function serviceSupabase() {
-  const url = process.env.SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) {
-    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for admin.')
+  const { url, key, missing } = serviceEnv()
+  if (missing.length) {
+    const err = new Error(
+      `Missing env (after trim): ${missing.join(', ')}. Admin needs the service role key from Supabase → Settings → API (not the anon key).`,
+    )
+    ;(err as Error & { code?: string }).code = 'ADMIN_ENV'
+    throw err
   }
-  return createClient(url, key)
+  try {
+    return createClient(url, key)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    const wrap = new Error(`Supabase createClient failed: ${msg}`)
+    ;(wrap as Error & { code?: string }).code = 'SUPABASE_CLIENT'
+    throw wrap
+  }
 }
 
 function requireAdmin(req: any, res: any): boolean {
@@ -104,9 +123,16 @@ export default async function handler(req: any, res: any) {
     supabase = serviceSupabase()
   } catch (e) {
     console.error('[admin-orders]', e)
+    const msg = e instanceof Error ? e.message : String(e)
+    const hint =
+      'If variables are set on Vercel but this still appears: use the same Supabase project as checkout; set them for Production (and Preview if you use preview URLs); redeploy. If the storefront uses VITE_API_ORIGIN, that host must be this deployment (or unset VITE_API_ORIGIN for same-origin API).'
+    const code = (e as Error & { code?: string }).code
+    if (code === 'ADMIN_ENV') {
+      return res.status(500).json({ error: msg, hint })
+    }
     return res.status(500).json({
-      error:
-        'Admin API needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel → Settings → Environment Variables (same values as in .env.example).',
+      error: msg,
+      hint,
     })
   }
 
