@@ -29,6 +29,7 @@ import catStairs3 from '../../Media/category pics/Stairs & Railings/stairs-and-r
 import catWalls1 from '../../Media/category pics/Walls, Windows & Ceiling Panels/walls-windows-and-ceiling-panels-01.jpg?url'
 import catWalls2 from '../../Media/category pics/Walls, Windows & Ceiling Panels/walls-windows-and-ceiling-panels-08.jpg?url'
 import catWalls3 from '../../Media/category pics/Walls, Windows & Ceiling Panels/walls-windows-and-ceiling-panels-10.jpg?url'
+import { AdminPage } from './AdminPage.tsx'
 import { IntroHero } from './IntroHero.tsx'
 import { HexagonBackground } from './HexagonBackground.tsx'
 import { CartProvider, TopbarCartButton, useCart } from './cart/CartContext.tsx'
@@ -2255,6 +2256,7 @@ export default function App() {
           <Route path="/products/:categorySlug/:productSlug" element={<ProductPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </CartProvider>
