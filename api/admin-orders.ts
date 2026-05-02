@@ -3,6 +3,15 @@ import { getAdminTokenFromReq, verifyAdminToken } from './lib/admin-auth.mjs'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
+function friendlyDbError(err: { message?: string; code?: string } | null) {
+  const msg = String(err?.message || '')
+  const code = String(err?.code || '')
+  if (/order_completed|column.*does not exist|PGRST204/i.test(msg) || code === '42703') {
+    return 'Supabase is missing column orders.order_completed. Open SQL Editor and run store/supabase/migrations/005_order_completed.sql from this repo.'
+  }
+  return msg || 'Database error'
+}
+
 function serviceSupabase() {
   const url = process.env.SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -50,7 +59,10 @@ export default async function handler(req: any, res: any) {
     supabase = serviceSupabase()
   } catch (e) {
     console.error('[admin-orders]', e)
-    return res.status(500).json({ error: 'Admin is not configured (missing service role key).' })
+    return res.status(500).json({
+      error:
+        'Admin API needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel → Settings → Environment Variables (same values as in .env.example).',
+    })
   }
 
   if (req.method === 'GET') {
@@ -99,7 +111,7 @@ export default async function handler(req: any, res: any) {
 
     if (error) {
       console.error('[admin-orders] patch', error)
-      return res.status(500).json({ error: error.message || 'Update failed' })
+      return res.status(500).json({ error: friendlyDbError(error) })
     }
     if (!data) {
       return res.status(404).json({ error: 'Order not found' })

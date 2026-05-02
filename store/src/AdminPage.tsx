@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -52,6 +52,57 @@ type AdminOrder = {
 
 const fetchOpts: RequestInit = { credentials: 'include' }
 
+function formatMoney(n: number) {
+  return `Rs. ${Math.round(n).toLocaleString()}`
+}
+
+function formatWhen(iso: string) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function IconExternal() {
+  return (
+    <svg className="admin-icon-external" viewBox="0 0 24 24" width={14} height={14} aria-hidden>
+      <path
+        fill="currentColor"
+        d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3zm-9 4h2v11h11v2H5V7z"
+      />
+    </svg>
+  )
+}
+
+function IconOrders() {
+  return (
+    <svg className="admin-nav-icon" viewBox="0 0 24 24" width={20} height={20} aria-hidden>
+      <path
+        fill="currentColor"
+        d="M7 4h14v14H7V4zm2 2v10h10V6H9zM3 8H1v12h12v-2H3V8zm4-4v2h2V4H7z"
+      />
+    </svg>
+  )
+}
+
+function IconShield() {
+  return (
+    <svg className="admin-login-shield" viewBox="0 0 24 24" width={40} height={40} aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v5.7c0 4.54-3.07 8.83-7 9.94-3.93-1.11-7-5.4-7-9.94V6.3l7-3.12zM11 7h2v6h-2V7zm0 8h2v2h-2v-2z"
+      />
+    </svg>
+  )
+}
+
+type OrderFilter = 'all' | 'open' | 'done'
+
 export function AdminPage() {
   const [checking, setChecking] = useState(true)
   const [sessionOk, setSessionOk] = useState(false)
@@ -62,6 +113,8 @@ export function AdminPage() {
   const [ordersError, setOrdersError] = useState<string | null>(null)
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [filter, setFilter] = useState<OrderFilter>('all')
+  const [lastSynced, setLastSynced] = useState<string | null>(null)
 
   const loadSession = useCallback(async () => {
     setChecking(true)
@@ -92,6 +145,7 @@ export function AdminPage() {
         return
       }
       setOrders(Array.isArray(data.orders) ? data.orders : [])
+      setLastSynced(new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
     } catch {
       setOrdersError('Network error loading orders.')
       setOrders([])
@@ -108,6 +162,19 @@ export function AdminPage() {
     }, 8000)
     return () => window.clearInterval(t)
   }, [sessionOk, loadOrders])
+
+  const stats = useMemo(() => {
+    const total = orders.length
+    const done = orders.filter((o) => Boolean(o.order_completed)).length
+    const open = total - done
+    return { total, open, done }
+  }, [orders])
+
+  const filteredOrders = useMemo(() => {
+    if (filter === 'open') return orders.filter((o) => !o.order_completed)
+    if (filter === 'done') return orders.filter((o) => Boolean(o.order_completed))
+    return orders
+  }, [orders, filter])
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
@@ -143,6 +210,7 @@ export function AdminPage() {
     }
     setSessionOk(false)
     setOrders([])
+    setFilter('all')
   }
 
   const setOrderCompleted = async (orderId: string, completed: boolean) => {
@@ -166,6 +234,7 @@ export function AdminPage() {
         )
       )
       setOrdersError(null)
+      setLastSynced(new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
     } catch {
       setOrdersError('Network error saving completion state.')
       void loadOrders()
@@ -174,158 +243,253 @@ export function AdminPage() {
     }
   }
 
-  const formatMoney = (n: number) => `Rs. ${Math.round(n).toLocaleString()}`
-
   if (checking) {
     return (
-      <main className="admin-page">
-        <p className="admin-muted">Checking session…</p>
-      </main>
+      <div className="admin-app">
+        <div className="admin-boot">
+          <div className="admin-boot-spinner" aria-hidden />
+          <p>Loading control centre…</p>
+        </div>
+      </div>
     )
   }
 
   if (!sessionOk) {
     return (
-      <main className="admin-page admin-auth">
-        <div className="admin-auth-card">
-          <h1 className="admin-title">BarqMech Admin</h1>
-          <p className="admin-lead">Enter the admin password to manage orders.</p>
-          <form className="admin-auth-form" onSubmit={handleLogin}>
-            <label className="admin-label">
-              Password
-              <input
-                className="admin-input"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </label>
-            {loginError ? (
-              <p className="admin-error" role="alert">
-                {loginError}
-              </p>
-            ) : null}
-            <button className="admin-btn admin-btn--primary" type="submit" disabled={loginBusy}>
-              {loginBusy ? 'Signing in…' : 'Sign in'}
-            </button>
-          </form>
-          <Link to="/" className="admin-back-link">
-            ← Back to site
-          </Link>
+      <div className="admin-app admin-app--auth">
+        <div className="admin-auth-layout">
+          <div className="admin-auth-hero" aria-hidden>
+            <p className="admin-auth-brand">BARQMECH</p>
+            <h2 className="admin-auth-tagline">Operations</h2>
+            <p className="admin-auth-sub">Order fulfilment &amp; customer logistics</p>
+          </div>
+          <div className="admin-auth-panel">
+            <div className="admin-auth-card">
+              <div className="admin-auth-card-head">
+                <IconShield />
+                <div>
+                  <h1 className="admin-auth-title">Sign in</h1>
+                  <p className="admin-auth-desc">Use your admin password. Sessions are secured with an HTTP-only cookie.</p>
+                </div>
+              </div>
+              <form className="admin-auth-form" onSubmit={handleLogin}>
+                <label className="admin-field-label" htmlFor="admin-password">
+                  Password
+                </label>
+                <input
+                  id="admin-password"
+                  className="admin-field-input"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••••••"
+                />
+                {loginError ? (
+                  <p className="admin-field-error" role="alert">
+                    {loginError}
+                  </p>
+                ) : null}
+                <button className="admin-btn admin-btn--primary admin-btn--block" type="submit" disabled={loginBusy}>
+                  {loginBusy ? 'Signing in…' : 'Continue'}
+                </button>
+              </form>
+              <Link to="/" className="admin-auth-footer-link">
+                ← Return to storefront
+              </Link>
+            </div>
+          </div>
         </div>
-      </main>
+      </div>
     )
   }
 
   return (
-    <main className="admin-page admin-dash">
-      <header className="admin-dash-header">
-        <div>
-          <h1 className="admin-title">Orders</h1>
-          <p className="admin-lead">Mark orders complete when fulfilled. The list refreshes automatically.</p>
+    <div className="admin-app">
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar-brand">
+          <span className="admin-sidebar-logo">BARQMECH</span>
+          <span className="admin-sidebar-badge">Control centre</span>
         </div>
-        <div className="admin-dash-actions">
-          <button type="button" className="admin-btn" onClick={() => void loadOrders()} disabled={ordersLoading}>
-            Refresh
-          </button>
-          <button type="button" className="admin-btn" onClick={handleLogout}>
+        <nav className="admin-sidebar-nav" aria-label="Admin">
+          <span className="admin-sidebar-link admin-sidebar-link--active">
+            <IconOrders />
+            Orders
+          </span>
+        </nav>
+        <div className="admin-sidebar-footer">
+          <Link to="/" className="admin-sidebar-ghost">
+            View storefront
+          </Link>
+          <button type="button" className="admin-sidebar-ghost" onClick={handleLogout}>
             Log out
           </button>
-          <Link to="/" className="admin-btn admin-btn--ghost">
-            Storefront
-          </Link>
         </div>
-      </header>
+      </aside>
 
-      {ordersError ? (
-        <p className="admin-banner" role="status">
-          {ordersError}
-        </p>
-      ) : null}
-      {ordersLoading && orders.length === 0 ? <p className="admin-muted">Loading orders…</p> : null}
+      <div className="admin-workspace">
+        <header className="admin-workspace-header">
+          <div>
+            <h1 className="admin-workspace-title">Orders</h1>
+            <p className="admin-workspace-sub">Review COD orders, line items, and mark fulfilment when complete.</p>
+          </div>
+          <div className="admin-workspace-actions">
+            {lastSynced ? <span className="admin-sync-pill">Synced {lastSynced}</span> : null}
+            <button type="button" className="admin-btn admin-btn--secondary" onClick={() => void loadOrders()} disabled={ordersLoading}>
+              {ordersLoading ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
+        </header>
 
-      <div className="admin-order-list">
-        {orders.map((order) => (
-          <article key={order.id} className="admin-order-card">
-            <div className="admin-order-head">
-              <div>
-                <p className="admin-order-code">#{order.order_code}</p>
-                <p className="admin-order-meta">
-                  {new Date(order.created_at).toLocaleString()} · {order.payment_method?.toUpperCase() || 'COD'}
-                </p>
-              </div>
-              <label className="admin-complete-toggle">
-                <input
-                  type="checkbox"
-                  checked={Boolean(order.order_completed)}
-                  disabled={updatingId === order.id}
-                  onChange={(e) => void setOrderCompleted(order.id, e.target.checked)}
-                />
-                <span>Completed</span>
-              </label>
-            </div>
-
-            <div className="admin-customer-block">
-              <p>
-                <strong>{order.customer_name}</strong>
-              </p>
-              <p>
-                <a href={`mailto:${order.customer_email}`}>{order.customer_email}</a> ·{' '}
-                <a href={`tel:${order.customer_phone.replace(/\s/g, '')}`}>{order.customer_phone}</a>
-              </p>
-              <p>
-                {order.address_line1}
-                {order.city ? `, ${order.city}` : ''}
-              </p>
-              {order.notes ? <p className="admin-notes">Notes: {order.notes}</p> : null}
-            </div>
-
-            <div className="admin-totals-row">
-              <span>Subtotal {formatMoney(order.subtotal_pkr)}</span>
-              <span>Shipping {formatMoney(order.shipping_pkr)}</span>
-              <span className="admin-total-grand">Total {formatMoney(order.grand_total_pkr)}</span>
-            </div>
-
-            <ul className="admin-line-list">
-              {(order.order_lines || []).map((line) => (
-                <li key={line.id} className="admin-line-item">
-                  <div className="admin-line-img-wrap">
-                    {line.image_url ? (
-                      <img src={line.image_url} alt="" className="admin-line-img" loading="lazy" />
-                    ) : (
-                      <div className="admin-line-img admin-line-img--placeholder" />
-                    )}
-                  </div>
-                  <div className="admin-line-body">
-                    <p className="admin-line-title">
-                      {line.product_url ? (
-                        <a href={line.product_url} target="_blank" rel="noopener noreferrer">
-                          {line.title}
-                        </a>
-                      ) : (
-                        line.title
-                      )}
-                    </p>
-                    <p className="admin-line-meta">
-                      {line.size} · {line.finish} · Qty {line.quantity} · {formatMoney(line.unit_price_pkr)} each · Line{' '}
-                      {formatMoney(line.line_subtotal_pkr)}
-                      {line.shipping_line_pkr ? ` · Ship ${formatMoney(line.shipping_line_pkr)}` : ''}
-                    </p>
-                    <p className="admin-line-meta">
-                      Frame {line.wooden_frame ? 'Yes' : 'No'} · LED {line.led_backlight ? 'Yes' : 'No'} · Install{' '}
-                      {line.installation ? 'Yes' : 'No'}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+        <section className="admin-kpi-row" aria-label="Summary">
+          <article className="admin-kpi">
+            <p className="admin-kpi-label">Total</p>
+            <p className="admin-kpi-value">{stats.total}</p>
           </article>
-        ))}
-      </div>
+          <article className="admin-kpi admin-kpi--accent">
+            <p className="admin-kpi-label">Open</p>
+            <p className="admin-kpi-value">{stats.open}</p>
+          </article>
+          <article className="admin-kpi admin-kpi--muted">
+            <p className="admin-kpi-label">Completed</p>
+            <p className="admin-kpi-value">{stats.done}</p>
+          </article>
+        </section>
 
-      {!ordersLoading && orders.length === 0 ? <p className="admin-muted">No orders yet.</p> : null}
-    </main>
+        <div className="admin-toolbar">
+          <div className="admin-filter" role="group" aria-label="Filter orders">
+            {(['all', 'open', 'done'] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                className={`admin-filter-btn${filter === key ? ' admin-filter-btn--on' : ''}`}
+                onClick={() => setFilter(key)}
+              >
+                {key === 'all' ? 'All' : key === 'open' ? 'Open' : 'Completed'}
+              </button>
+            ))}
+          </div>
+          <p className="admin-toolbar-hint">Auto-refresh every 8s while this tab is open.</p>
+        </div>
+
+        {ordersError ? (
+          <div className="admin-alert" role="alert">
+            <strong>Action needed</strong>
+            <p>{ordersError}</p>
+          </div>
+        ) : null}
+
+        {ordersLoading && orders.length === 0 ? (
+          <div className="admin-skeleton-stack" aria-busy>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="admin-skeleton-card" />
+            ))}
+          </div>
+        ) : null}
+
+        <div className="admin-order-feed">
+          {filteredOrders.map((order) => (
+            <article key={order.id} className="admin-order">
+              <div className="admin-order-top">
+                <div className="admin-order-ids">
+                  <span className="admin-order-code">#{order.order_code}</span>
+                  <span className={`admin-status${order.order_completed ? ' admin-status--done' : ' admin-status--open'}`}>
+                    {order.order_completed ? 'Completed' : 'Open'}
+                  </span>
+                </div>
+                <div className="admin-order-when">{formatWhen(order.created_at)}</div>
+                <label className="admin-switch">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(order.order_completed)}
+                    disabled={updatingId === order.id}
+                    onChange={(e) => void setOrderCompleted(order.id, e.target.checked)}
+                  />
+                  <span className="admin-switch-ui" aria-hidden />
+                  <span className="admin-switch-label">Fulfilled</span>
+                </label>
+              </div>
+
+              <div className="admin-order-customer">
+                <div className="admin-order-customer-main">
+                  <p className="admin-order-name">{order.customer_name}</p>
+                  <p className="admin-order-contact">
+                    <a href={`mailto:${order.customer_email}`}>{order.customer_email}</a>
+                    <span className="admin-dot">·</span>
+                    <a href={`tel:${order.customer_phone.replace(/\s/g, '')}`}>{order.customer_phone}</a>
+                  </p>
+                  <p className="admin-order-address">
+                    {order.address_line1}
+                    {order.city ? `, ${order.city}` : ''}
+                  </p>
+                  {order.notes ? <p className="admin-order-notes">{order.notes}</p> : null}
+                </div>
+                <div className="admin-order-money">
+                  <div>
+                    <span className="admin-money-label">Subtotal</span>
+                    <span className="admin-money-val">{formatMoney(order.subtotal_pkr)}</span>
+                  </div>
+                  <div>
+                    <span className="admin-money-label">Shipping</span>
+                    <span className="admin-money-val">{formatMoney(order.shipping_pkr)}</span>
+                  </div>
+                  <div className="admin-order-total">
+                    <span className="admin-money-label">COD total</span>
+                    <span className="admin-money-grand">{formatMoney(order.grand_total_pkr)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <ul className="admin-lines">
+                {(order.order_lines || []).map((line) => (
+                  <li key={line.id} className="admin-line">
+                    <div className="admin-line-thumb">
+                      {line.image_url ? (
+                        <img src={line.image_url} alt="" loading="lazy" />
+                      ) : (
+                        <div className="admin-line-thumb--empty" />
+                      )}
+                    </div>
+                    <div className="admin-line-detail">
+                      <p className="admin-line-name">
+                        {line.product_url ? (
+                          <a href={line.product_url} target="_blank" rel="noopener noreferrer" className="admin-line-link">
+                            {line.title}
+                            <IconExternal />
+                          </a>
+                        ) : (
+                          line.title
+                        )}
+                      </p>
+                      <p className="admin-line-spec">
+                        {line.size} · {line.finish} · Qty {line.quantity} · {formatMoney(line.unit_price_pkr)} each
+                      </p>
+                      <p className="admin-line-spec">
+                        Line {formatMoney(line.line_subtotal_pkr)}
+                        {line.shipping_line_pkr ? ` · Ship ${formatMoney(line.shipping_line_pkr)}` : ''} · Frame{' '}
+                        {line.wooden_frame ? 'Yes' : 'No'} · LED {line.led_backlight ? 'Yes' : 'No'} · Install{' '}
+                        {line.installation ? 'Yes' : 'No'}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+
+        {!ordersLoading && filteredOrders.length === 0 ? (
+          <div className="admin-empty">
+            <p className="admin-empty-title">{filter === 'all' ? 'No orders yet' : filter === 'open' ? 'No open orders' : 'No completed orders'}</p>
+            <p className="admin-empty-text">
+              {filter === 'all'
+                ? 'New checkout orders will appear here automatically.'
+                : 'Try another filter or refresh.'}
+            </p>
+          </div>
+        ) : null}
+      </div>
+    </div>
   )
 }

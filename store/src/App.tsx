@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import introVideoUrl from '../../Media/Final Video.mp4?url'
 import finalLogoUrl from '../../Media/Final Logo - Copy.png?url'
 import sampleImage1 from '../../Media/sample pics/1 (1).jpg?url'
@@ -2244,22 +2244,33 @@ function CheckoutSuccessPage() {
   )
 }
 
-export default function App() {
-  const location = useLocation()
-  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [location.pathname])
+function ShopLayout() {
   return (
     <HexagonBackground hexagonSize={74} hexagonMargin={3}>
       <CartProvider>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/products" element={<ProductsPage />} />
-          <Route path="/products/:categorySlug/:productSlug" element={<ProductPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Outlet />
       </CartProvider>
     </HexagonBackground>
+  )
+}
+
+export default function App() {
+  const location = useLocation()
+  useEffect(() => {
+    if (location.pathname.startsWith('/admin')) return
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [location.pathname])
+  return (
+    <Routes>
+      <Route path="/admin" element={<AdminPage />} />
+      <Route element={<ShopLayout />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/products" element={<ProductsPage />} />
+        <Route path="/products/:categorySlug/:productSlug" element={<ProductPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
   )
 }
