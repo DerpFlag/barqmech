@@ -46,7 +46,10 @@ type AdminOrder = {
   grand_total_pkr: number
   payment_method: string
   created_at: string
+  order_date?: string
   order_completed?: boolean
+  order_completed_at?: string | null
+  product_links?: unknown
   order_lines?: OrderLine[]
 }
 
@@ -249,7 +252,10 @@ export function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId, order_completed: completed }),
       })
-      const data = (await res.json().catch(() => ({}))) as { error?: string; order?: { order_completed: boolean } }
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string
+        order?: { order_completed: boolean; order_completed_at?: string | null }
+      }
       if (!res.ok) {
         setOrdersError(typeof data.error === 'string' ? data.error : 'Update failed')
         void loadOrders()
@@ -257,8 +263,15 @@ export function AdminPage() {
       }
       setOrders((prev) =>
         prev.map((o) =>
-          o.id === orderId ? { ...o, order_completed: data.order?.order_completed ?? completed } : o
-        )
+          o.id === orderId
+            ? {
+                ...o,
+                order_completed: data.order?.order_completed ?? completed,
+                order_completed_at:
+                  data.order?.order_completed_at ?? (completed ? new Date().toISOString() : null),
+              }
+            : o,
+        ),
       )
       setOrdersError(null)
       setLastSynced(new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
@@ -425,7 +438,12 @@ export function AdminPage() {
                     {order.order_completed ? 'Completed' : 'Open'}
                   </span>
                 </div>
-                <div className="admin-order-when">{formatWhen(order.created_at)}</div>
+                <div className="admin-order-when">
+                  <span>Ordered {formatWhen(order.order_date || order.created_at)}</span>
+                  {order.order_completed && order.order_completed_at ? (
+                    <span className="admin-order-when-done"> · Completed {formatWhen(order.order_completed_at)}</span>
+                  ) : null}
+                </div>
                 <label className="admin-switch">
                   <input
                     type="checkbox"

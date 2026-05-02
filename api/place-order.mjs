@@ -65,7 +65,9 @@ function buildPersistedLines(lines, orderId, siteBase) {
       merge_key: l.mergeKey != null ? String(l.mergeKey) : null,
       slug: String(l.slug || ''),
       category_slug: String(l.categorySlug || ''),
-      product_url: productPageUrl(l, siteBase) || '',
+      product_url: productPageUrl(l, siteBase) || String(l.productUrl || l.product_url || ''),
+      product_link:
+        productPageUrl(l, siteBase) || String(l.productUrl || l.product_url || '') || '',
       title: String(l.title || ''),
       image_url: absoluteAssetUrl(l.imageUrl, siteBase) || String(l.imageUrl || ''),
       size: String(l.size || ''),

@@ -4447,6 +4447,11 @@ body.intro-playing {
   justify-self: end;
 }
 
+.admin-order-when-done {
+  color: var(--admin-muted);
+  opacity: 0.95;
+}
+
 @media (max-width: 720px) {
   .admin-order-when {
     justify-self: start;

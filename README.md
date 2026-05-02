@@ -31,7 +31,7 @@ Set environment variables under **Project → Settings → Environment Variables
 
 ## Database
 
-Apply SQL in Supabase (SQL Editor) from `store/supabase/migrations/` in order: **`001`** (orders + `lines` jsonb), **`002`** if needed, **`005`** (`order_completed`), **`006`** (drops legacy `order_lines` — run after deploying API that only writes `orders.lines`). Or run `cd store && npm run db:apply-sql -- supabase/migrations/<file>.sql` if `Media/Keys.txt` has a Postgres URL (not in git).
+Apply SQL in Supabase (SQL Editor) from `store/supabase/migrations/` in order: **`001`** (orders + `lines` jsonb), **`002`** if needed, **`005`** (`order_completed`), **`006`** (drops legacy `order_lines` — run after deploying API that only writes `orders.lines`), **`007`** (`order_date`, `product_links`, `order_completed_at`, and **`order_products`** view — one row per line, join on `order_code` or `order_id`). Or run `cd store && npm run db:apply-sql -- supabase/migrations/<file>.sql` if `Media/Keys.txt` has a Postgres URL (not in git).
 
 ## Note on `HF/`
 

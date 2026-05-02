@@ -6,8 +6,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 function friendlyDbError(err: { message?: string; code?: string } | null) {
   const msg = String(err?.message || '')
   const code = String(err?.code || '')
-  if (/order_completed|column.*does not exist|PGRST204/i.test(msg) || code === '42703') {
-    return 'Supabase is missing column orders.order_completed. Open SQL Editor and run store/supabase/migrations/005_order_completed.sql from this repo.'
+  if (/order_completed|order_completed_at|order_date|product_links|column.*does not exist|PGRST204/i.test(msg) || code === '42703') {
+    return 'Supabase schema may be behind this API. Run migrations from store/supabase/migrations/ (005_order_completed.sql, 007_order_dates_product_links_view.sql, etc.).'
   }
   return msg || 'Database error'
 }
@@ -66,7 +66,9 @@ function normalizeAdminLines(raw: unknown, orderId: string) {
     const slug = String(l.slug || '')
     const categorySlug = String(l.category_slug ?? l.categorySlug ?? '')
     const imageRaw = String(l.image_url ?? l.imageUrl ?? '')
-    const existingProductUrl = String(l.product_url || '')
+    const existingProductUrl = String(
+      l.product_url || l.product_link || l.productUrl || l.productLink || '',
+    )
     const productUrl = existingProductUrl || productUrlFromLine(l, base)
     const imageUrl = absolutizeImage(imageRaw, base) || imageRaw
     const lineSub = Number(l.line_subtotal_pkr)
@@ -139,11 +141,16 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'Invalid order id' })
     }
 
+    const updates: Record<string, unknown> = {
+      order_completed: completed,
+      order_completed_at: completed ? new Date().toISOString() : null,
+    }
+
     const { data, error } = await supabase
       .from('orders')
-      .update({ order_completed: completed })
+      .update(updates)
       .eq('id', orderId)
-      .select('id, order_completed')
+      .select('id, order_completed, order_completed_at')
       .maybeSingle()
 
     if (error) {
