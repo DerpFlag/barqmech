@@ -14,32 +14,25 @@ function bodyFromParsedJson(raw: string): Record<string, unknown> {
   }
 }
 
-async function readJsonBody(req: any): Promise<Record<string, unknown>> {
-  if (Buffer.isBuffer(req.body)) {
-    const raw = req.body.toString('utf8')
+/**
+ * Vercel parses JSON POST bodies into `req.body` before the handler runs.
+ * Do not read `req` as a stream here — that can throw or double-consume and
+ * cause FUNCTION_INVOCATION_FAILED.
+ */
+function readJsonBody(req: any): Record<string, unknown> {
+  const b = req.body
+  if (b == null) return {}
+  if (Buffer.isBuffer(b)) {
+    const raw = b.toString('utf8')
     return raw ? bodyFromParsedJson(raw) : {}
   }
-  if (req.body instanceof Uint8Array) {
-    const raw = Buffer.from(req.body).toString('utf8')
+  if (b instanceof Uint8Array) {
+    const raw = Buffer.from(b).toString('utf8')
     return raw ? bodyFromParsedJson(raw) : {}
   }
-  if (typeof req.body === 'string' && req.body.length) {
-    return bodyFromParsedJson(req.body)
-  }
-  if (req.body != null && typeof req.body === 'object' && !Array.isArray(req.body)) {
-    const o = req.body as Record<string, unknown>
-    const ctor = (o as { constructor?: { name?: string } }).constructor?.name
-    if (ctor === 'Readable' || ctor === 'Gunzip' || ctor === 'Inflate') {
-      /* fall through to stream read */
-    } else if (Object.keys(o).length > 0 || 'password' in o || 'Password' in o) {
-      return o
-    }
-    /* Empty plain object: runtime may have left stream unread — try below. */
-  }
-  const chunks: Buffer[] = []
-  for await (const chunk of req) chunks.push(chunk as Buffer)
-  const raw = Buffer.concat(chunks).toString('utf8')
-  return raw ? bodyFromParsedJson(raw) : {}
+  if (typeof b === 'string' && b.length) return bodyFromParsedJson(b)
+  if (typeof b === 'object' && !Array.isArray(b)) return b as Record<string, unknown>
+  return {}
 }
 
 function json(res: any, status: number, payload: Record<string, unknown>) {
@@ -55,12 +48,7 @@ export default async function handler(req: any, res: any) {
       return json(res, 405, { error: 'Method not allowed' })
     }
 
-    let body: Record<string, unknown>
-    try {
-      body = await readJsonBody(req)
-    } catch {
-      return json(res, 400, { error: 'Invalid JSON body.' })
-    }
+    const body = readJsonBody(req)
 
     const onVercel = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
     if (onVercel && !adminPasswordConfigured()) {
