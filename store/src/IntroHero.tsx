@@ -5,8 +5,9 @@ type IntroHeroProps = {
   posterSrc?: string
   introDone: boolean
   onIntroEnded: () => void
+  /** Fires once when this many seconds remain (overlay can fade in while video keeps playing). */
+  onLeadReveal?: () => void
   playbackRate?: number
-  endTrimSeconds?: number
   revealLeadSeconds?: number
   children?: ReactNode
 }
@@ -16,8 +17,8 @@ export function IntroHero({
   posterSrc,
   introDone,
   onIntroEnded,
+  onLeadReveal,
   playbackRate = 1,
-  endTrimSeconds = 0,
   revealLeadSeconds = 0,
   children,
 }: IntroHeroProps) {
@@ -25,6 +26,7 @@ export function IntroHero({
   const heroCanvasRef = useRef<HTMLCanvasElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const introDoneRef = useRef(false)
+  const leadRevealSentRef = useRef(false)
 
   useEffect(() => {
     introDoneRef.current = introDone
@@ -296,12 +298,15 @@ export function IntroHero({
     const video = videoRef.current
     if (!video || !Number.isFinite(video.duration)) return
     const remaining = video.duration - video.currentTime
-    const revealThreshold = Math.max(endTrimSeconds + revealLeadSeconds, 0)
-    if (remaining <= revealThreshold) {
-      handleIntroReveal()
-    }
-    if (endTrimSeconds > 0 && remaining <= endTrimSeconds) {
-      handleIntroFinish()
+    if (
+      onLeadReveal &&
+      !leadRevealSentRef.current &&
+      revealLeadSeconds > 0 &&
+      remaining <= revealLeadSeconds + 0.05 &&
+      remaining > 0.02
+    ) {
+      leadRevealSentRef.current = true
+      onLeadReveal()
     }
   }
 

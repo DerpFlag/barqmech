@@ -328,7 +328,14 @@ function HomePage() {
         </header>
       )}
 
-      <IntroHero videoSrc={introVideoUrl} introDone={introDone} onIntroEnded={() => setIntroDone(true)} playbackRate={1.5} endTrimSeconds={1} revealLeadSeconds={2}>
+      <IntroHero
+        videoSrc={introVideoUrl}
+        introDone={introDone}
+        onIntroEnded={() => setIntroDone(true)}
+        onLeadReveal={() => setHeroCopyVisible(true)}
+        playbackRate={1.5}
+        revealLeadSeconds={2}
+      >
         <div className={`video-overlay ${heroCopyVisible ? 'visible' : ''}`}>
           <p className="overlay-copy overlay-left">Waves of change with<br /><span className="overlay-brand-chrome">BARQMECH</span></p>
           <div className="overlay-right">
