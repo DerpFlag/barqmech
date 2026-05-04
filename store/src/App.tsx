@@ -140,6 +140,8 @@ function placeOrderApiUrl() {
 function HomePage() {
   const navigate = useNavigate()
   const [introDone, setIntroDone] = useState(false)
+  /** True ~2s before the intro video ends — mount chrome + start fades while video still plays. */
+  const [introLeadReveal, setIntroLeadReveal] = useState(false)
   const [heroCopyVisible, setHeroCopyVisible] = useState(false)
   const [uiVisible, setUiVisible] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -155,14 +157,11 @@ function HomePage() {
   const [featuredImageIndexes, setFeaturedImageIndexes] = useState<Record<string, number>>(Object.fromEntries(featuredItems.map((item) => [item.id, 0])))
   const [featuredStep, setFeaturedStep] = useState(25)
 
+  /** After the video ends: ensure overlay + page chrome are visible (lead reveal usually did this earlier). */
   useEffect(() => {
-    if (!introDone) {
-      setUiVisible(false)
-      setHeroCopyVisible(false)
-      return
-    }
-    const firstTick = window.setTimeout(() => setHeroCopyVisible(true), 70)
-    const secondTick = window.setTimeout(() => setUiVisible(true), 180)
+    if (!introDone) return
+    const firstTick = window.setTimeout(() => setHeroCopyVisible((v) => v || true), 40)
+    const secondTick = window.setTimeout(() => setUiVisible((v) => v || true), 120)
     return () => {
       window.clearTimeout(firstTick)
       window.clearTimeout(secondTick)
@@ -307,7 +306,7 @@ function HomePage() {
 
   return (
     <>
-      {introDone && (
+      {(introLeadReveal || introDone) && (
         <header className={`topbar ${uiVisible ? 'visible' : ''}`}>
           <div className="topbar-inner">
             <button type="button" className="brand-logo-btn" onClick={() => scrollToSection('home')}>
@@ -332,7 +331,12 @@ function HomePage() {
         videoSrc={introVideoUrl}
         introDone={introDone}
         onIntroEnded={() => setIntroDone(true)}
-        onLeadReveal={() => setHeroCopyVisible(true)}
+        onLeadReveal={() => {
+          setIntroLeadReveal(true)
+          setHeroCopyVisible(true)
+          document.body.classList.remove('intro-playing')
+          window.setTimeout(() => setUiVisible(true), 100)
+        }}
         playbackRate={1.5}
         revealLeadSeconds={2}
       >
@@ -347,9 +351,20 @@ function HomePage() {
 
       <div className="hero-below-fade" aria-hidden />
 
-      {introDone && <section className={`mobile-copy ${uiVisible ? 'visible' : ''}`}><p className="mobile-line mobile-line-headline">Waves of change with<br /><span className="overlay-brand-chrome">BARQMECH</span></p><p className="mobile-line">Explore our range of crafted metal and<br />architectural products.</p><button type="button" className="hero-view-btn" onClick={goToProducts}>View shop</button></section>}
+      {(introLeadReveal || introDone) && (
+        <section className={`mobile-copy ${uiVisible ? 'visible' : ''}`}>
+          <p className="mobile-line mobile-line-headline">
+            Waves of change with<br />
+            <span className="overlay-brand-chrome">BARQMECH</span>
+          </p>
+          <p className="mobile-line">Explore our range of crafted metal and<br />architectural products.</p>
+          <button type="button" className="hero-view-btn" onClick={goToProducts}>
+            View shop
+          </button>
+        </section>
+      )}
 
-      {introDone && (
+      {(introLeadReveal || introDone) && (
         <main className={`site-content ${uiVisible ? 'visible' : ''}`}>
           <section className="categories-section" id="collections"><div className="section-head"><h2>Product Categories</h2><p>Browse our core metal cutting capabilities below.</p></div></section>
           <section className="mosaic-section" aria-label="Category image gallery"><div className="mosaic-grid">{galleryTiles.map((tile) => {const activeIndex = galleryIndexes[tile.id] ?? 0; const targetCategory = galleryTileRouteCategory[tile.id]; return <article key={tile.id} className={`mosaic-tile ${tile.className}`}><div className="mosaic-image-stack">{tile.images.map((image, index) => <img key={`${tile.id}-${image}`} src={image} alt={tile.title} className={`mosaic-image ${index === activeIndex ? 'active' : ''}`} loading="lazy" />)}</div><div className="mosaic-overlay"><h3>{tile.title}</h3><Link to={`/products?category=${categorySlugs[targetCategory]}`} className="mosaic-discover-btn">Discover</Link></div></article>})}</div></section>

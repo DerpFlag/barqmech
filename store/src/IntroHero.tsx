@@ -32,6 +32,10 @@ export function IntroHero({
     introDoneRef.current = introDone
   }, [introDone])
 
+  useEffect(() => {
+    leadRevealSentRef.current = false
+  }, [videoSrc])
+
   /**
    * Start playback only after `canplaythrough` (browser thinks it can play without rebuffering),
    * not on `readyState` alone — that often fires too early on mobile and causes stutter.
@@ -322,6 +326,10 @@ export function IntroHero({
         preload="auto"
         loop={false}
         onEnded={() => {
+          if (onLeadReveal && !leadRevealSentRef.current && revealLeadSeconds > 0) {
+            leadRevealSentRef.current = true
+            onLeadReveal()
+          }
           handleIntroReveal()
           handleIntroFinish()
         }}

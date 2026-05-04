@@ -3034,6 +3034,17 @@ body.intro-playing {
 }
 
 @media (max-width: 920px) {
+  /* No classic scrollbar track on narrow viewports — full width for layout; touch still scrolls the page. */
+  html {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
   .product-detail-page .product-detail-gallery-wrap {
     position: static;
     top: auto;
