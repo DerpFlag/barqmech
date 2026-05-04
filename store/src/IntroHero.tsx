@@ -30,7 +30,11 @@ export function IntroHero({
     introDoneRef.current = introDone
   }, [introDone])
 
-  /** Wait for enough buffer before playing — avoids jitter from starting while still loading. */
+  /**
+   * Start playback only after `canplaythrough` (browser thinks it can play without rebuffering),
+   * not on `readyState` alone — that often fires too early on mobile and causes stutter.
+   * Long fallback only if `canplaythrough` never fires (unusual).
+   */
   useEffect(() => {
     const video = videoRef.current
     if (!video || introDone) return
@@ -47,14 +51,9 @@ export function IntroHero({
     }
 
     const onCanPlayThrough = () => tryPlay()
-
     video.addEventListener('canplaythrough', onCanPlayThrough, { once: true })
 
-    if (video.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) {
-      tryPlay()
-    }
-
-    const fallbackMs = 15000
+    const fallbackMs = 20000
     const fallbackId = window.setTimeout(() => {
       if (!cancelled && !started) tryPlay()
     }, fallbackMs)
@@ -78,6 +77,8 @@ export function IntroHero({
   }, [introDone, playbackRate])
 
   useEffect(() => {
+    if (introDone) return
+
     const video = videoRef.current
     const canvas = heroCanvasRef.current
     const hero = heroRef.current
@@ -86,7 +87,10 @@ export function IntroHero({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    let cancelled = false
     let rafId = 0
+    let rvfcId = 0
+    let resizeDebounce = 0
     let canvasWidth = 0
     let canvasHeight = 0
     let dpr = 1
@@ -101,7 +105,7 @@ export function IntroHero({
 
     const resizeCanvas = () => {
       const rect = hero.getBoundingClientRect()
-      dpr = Math.max(window.devicePixelRatio || 1, 1)
+      dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1), 2)
       canvasWidth = Math.max(1, Math.floor(rect.width * dpr))
       canvasHeight = Math.max(1, Math.floor(rect.height * dpr))
       canvas.width = canvasWidth
@@ -203,37 +207,80 @@ export function IntroHero({
       }
     }
 
-    const drawFrame = () => {
+    const vWithRvfc = video as HTMLVideoElement & {
+      requestVideoFrameCallback?: (cb: VideoFrameRequestCallback) => number
+      cancelVideoFrameCallback?: (handle: number) => void
+    }
+
+    let idleFrames = 0
+
+    const scheduleNextDraw = () => {
+      if (cancelled || introDoneRef.current) return
+
       const videoReady = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0
+      const playing = !video.paused && !video.ended
+      const useRvfc =
+        typeof vWithRvfc.requestVideoFrameCallback === 'function' && videoReady && playing
+
+      if (useRvfc) {
+        const id = vWithRvfc.requestVideoFrameCallback!(() => {
+          drawFrame()
+        })
+        rvfcId = typeof id === 'number' ? id : 0
+      } else {
+        rafId = window.requestAnimationFrame(() => {
+          rafId = 0
+          drawFrame()
+        })
+      }
+    }
+
+    const drawFrame = () => {
+      if (cancelled || introDoneRef.current) return
+
+      const videoReady = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0
+      const playing = !video.paused && !video.ended
+
       if (videoReady) {
-        drawSourceFrame(video, video.videoWidth, video.videoHeight)
+        if (playing || idleFrames++ % 4 === 0) {
+          drawSourceFrame(video, video.videoWidth, video.videoHeight)
+        }
       } else if (posterSrc && posterLoaded && poster.naturalWidth > 0 && poster.naturalHeight > 0) {
         drawSourceFrame(poster, poster.naturalWidth, poster.naturalHeight)
       }
 
-      rafId = window.requestAnimationFrame(drawFrame)
+      scheduleNextDraw()
     }
 
     resizeCanvas()
     drawFrame()
 
     const resizeObserver = new ResizeObserver(() => {
-      if (!introDoneRef.current) {
+      if (introDoneRef.current || cancelled) return
+      window.clearTimeout(resizeDebounce)
+      resizeDebounce = window.setTimeout(() => {
         resizeCanvas()
-      }
+      }, 100)
     })
     resizeObserver.observe(hero)
 
     return () => {
-      window.cancelAnimationFrame(rafId)
+      cancelled = true
+      window.clearTimeout(resizeDebounce)
+      if (rafId) window.cancelAnimationFrame(rafId)
+      if (rvfcId && typeof vWithRvfc.cancelVideoFrameCallback === 'function') {
+        vWithRvfc.cancelVideoFrameCallback(rvfcId)
+      }
       resizeObserver.disconnect()
       poster.onload = null
     }
-  }, [posterSrc])
+  }, [posterSrc, introDone])
 
   const handleIntroReveal = () => {
     if (introDoneRef.current) return
     introDoneRef.current = true
+    const v = videoRef.current
+    if (v) v.pause()
     onIntroEnded()
   }
 
