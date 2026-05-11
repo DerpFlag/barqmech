@@ -61,6 +61,13 @@ function buildPersistedLines(lines, orderId, siteBase) {
   return (Array.isArray(lines) ? lines : []).map((l, idx) => {
     const qty = Math.min(999, Math.max(1, Math.round(Number(l.quantity))))
     const unit = Math.round(Number(l.unitPrice))
+    const pid = l.productId != null ? String(l.productId).trim() : ''
+    const designCodeResolved =
+      pid && (l.designCode != null && Number.isFinite(Number(l.designCode)))
+        ? Math.round(Number(l.designCode))
+        : pid
+          ? 0
+          : null
     const productUrl =
       productPageUrl(l, siteBase) || String(l.productUrl || l.product_url || '').trim() || ''
     const line = {
@@ -73,6 +80,7 @@ function buildPersistedLines(lines, orderId, siteBase) {
       image_url: absoluteAssetUrl(l.imageUrl, siteBase) || String(l.imageUrl || '').trim() || '',
       size: String(l.size || ''),
       finish: String(l.finish || ''),
+      design_code: designCodeResolved,
       wooden_frame: Boolean(l.woodenFrame),
       led_backlight: Boolean(l.ledBacklight),
       installation: Boolean(l.installation),
@@ -81,10 +89,12 @@ function buildPersistedLines(lines, orderId, siteBase) {
       line_subtotal_pkr: unit * qty,
       shipping_line_pkr: Math.round(shippingForLine({ ...l, quantity: qty })),
     }
-    const pid = l.productId != null ? String(l.productId).trim() : ''
     if (pid) line.product_id = pid
     const mk = l.mergeKey != null ? String(l.mergeKey).trim() : ''
     if (mk) line.merge_key = mk
+    const dxfPath = String(l.dxf_storage_path || '').trim()
+    if (dxfPath) line.dxf_storage_path = dxfPath
+    if (line.design_code == null) delete line.design_code
     return line
   })
 }
@@ -143,7 +153,17 @@ function renderLineItemBlock(l, siteBase) {
             <div style="font-size:16px;font-weight:700;color:#0f172a;line-height:1.35;">${escapeHtml(l.title)}</div>
             <div style="font-size:13px;color:#475569;margin-top:10px;line-height:1.65;">
               <strong style="color:#334155;">Size:</strong> ${escapeHtml(l.size)}<br/>
+              ${
+                l.designCode != null && Number(l.designCode) > 0
+                  ? `<strong style="color:#334155;">Design code:</strong> ${escapeHtml(String(l.designCode))}<br/>`
+                  : ''
+              }
               <strong style="color:#334155;">Finish:</strong> ${escapeHtml(l.finish)}<br/>
+              ${
+                l.dxfSignedUrl
+                  ? `<strong style="color:#334155;">DXF file:</strong> <a href="${escapeHtml(l.dxfSignedUrl)}" style="color:#1d4ed8;font-size:13px;font-family:Arial,Helvetica,sans-serif;text-decoration:underline;">Download (CAD)</a> <span style="color:#94a3b8;font-size:12px;">· link expires in 14 days</span><br/>`
+                  : ''
+              }
               <strong style="color:#334155;">Add-ons:</strong> ${escapeHtml(add.frame)} · ${escapeHtml(add.led)} · ${escapeHtml(add.inst)}
             </div>
             ${linkHtml ? `<div style="margin-top:10px;">${linkHtml}</div>` : ''}
@@ -286,6 +306,49 @@ async function readJsonBody(req) {
   return JSON.parse(raw)
 }
 
+/** Adds `dxf_storage_path` (for DB snapshot) and `dxfSignedUrl` (for email only) using service role + private bucket. */
+async function enrichLinesWithDxfDownloads(supabaseSvc, lines) {
+  if (!supabaseSvc || !Array.isArray(lines) || lines.length === 0) {
+    return lines.map((l) => ({ ...l }))
+  }
+  const pids = [...new Set(lines.map((l) => String(l.productId || '').trim()).filter(Boolean))]
+  if (!pids.length) return lines.map((l) => ({ ...l }))
+
+  const { data: variants, error } = await supabaseSvc
+    .from('catalog_variants')
+    .select('product_id, design_code, dxf_storage_path')
+    .in('product_id', pids)
+
+  if (error) {
+    console.error('[place-order] catalog_variants', error)
+    return lines.map((l) => ({ ...l }))
+  }
+
+  const lookup = new Map()
+  for (const v of variants || []) {
+    if (v?.product_id && v.dxf_storage_path != null && String(v.dxf_storage_path).trim()) {
+      lookup.set(`${v.product_id}::${Number(v.design_code)}`, String(v.dxf_storage_path).trim())
+    }
+  }
+
+  const ttlSec = 60 * 60 * 24 * 14
+  const out = []
+  for (const l of lines) {
+    const pid = String(l.productId || '').trim()
+    const dc = l.designCode != null && Number.isFinite(Number(l.designCode)) ? Math.round(Number(l.designCode)) : 0
+    const storagePath = pid ? lookup.get(`${pid}::${dc}`) : null
+    let dxfSignedUrl = null
+    const dxf_storage_path = storagePath || undefined
+    if (storagePath) {
+      const { data, error: signErr } = await supabaseSvc.storage.from('product-dxf').createSignedUrl(storagePath, ttlSec)
+      if (signErr) console.error('[place-order] DXF sign', signErr)
+      else dxfSignedUrl = data?.signedUrl ?? null
+    }
+    out.push({ ...l, dxf_storage_path, dxfSignedUrl })
+  }
+  return out
+}
+
 export default async function handler(req, res) {
   const origin = process.env.ALLOWED_ORIGIN || '*'
   res.setHeader('Access-Control-Allow-Origin', origin)
@@ -373,10 +436,16 @@ export default async function handler(req, res) {
   const siteBase = resolveSiteBaseUrl(body)
   const orderId = randomUUID()
 
+  const serviceRoleKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
+  const supabaseService =
+    serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } }) : null
+
+  const linesForOrder = await enrichLinesWithDxfDownloads(supabaseService, lines)
+
   let orderCode = null
   let inserted = null
 
-  const persistedLines = buildPersistedLines(lines, orderId, siteBase)
+  const persistedLines = buildPersistedLines(linesForOrder, orderId, siteBase)
 
   for (let attempt = 0; attempt < 12; attempt++) {
     orderCode = randomSixDigit()
@@ -417,7 +486,7 @@ export default async function handler(req, res) {
     grand,
     shipping,
     subtotal,
-    lines,
+    lines: linesForOrder,
     customer: { name, email, phone, addressLine1, city, notes },
     siteBase,
   }

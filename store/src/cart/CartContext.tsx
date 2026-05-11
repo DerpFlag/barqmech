@@ -1,5 +1,6 @@
 import {
   createContext,
+  memo,
   useCallback,
   useContext,
   useEffect,
@@ -9,7 +10,7 @@ import {
 } from 'react'
 import { Link } from 'react-router-dom'
 
-const STORAGE_KEY = 'barqmech-cart-v1'
+const STORAGE_KEY = 'barqmech-cart-v2'
 
 export type CartLine = {
   mergeKey: string
@@ -23,6 +24,8 @@ export type CartLine = {
   quantity: number
   size: string
   finish: string
+  /** Matches CSV / DXF design code when product has multiple numbered designs. */
+  designCode?: number
   woodenFrame?: boolean
   ledBacklight?: boolean
   installation?: boolean
@@ -79,13 +82,14 @@ export function useCart() {
 
 function mergeKeyFor(
   productId: string,
+  designCode: number,
   size: string,
   finish: string,
   woodenFrame = false,
   ledBacklight = false,
   installation = false
 ) {
-  return `${productId}::${size}::${finish}::${woodenFrame ? 'wf' : 'nw'}::${ledBacklight ? 'led' : 'nled'}::${installation ? 'inst' : 'noinst'}`
+  return `${productId}::dc${designCode}::${size}::${finish}::${woodenFrame ? 'wf' : 'nw'}::${ledBacklight ? 'led' : 'nled'}::${installation ? 'inst' : 'noinst'}`
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -103,14 +107,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const subtotal = useMemo(() => lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0), [lines])
 
   const addToCart = useCallback((input: Omit<CartLine, 'mergeKey'> & { mergeKey?: string }) => {
-    const mergeKey = input.mergeKey ?? mergeKeyFor(
-      input.productId,
-      input.size,
-      input.finish,
-      Boolean(input.woodenFrame),
-      Boolean(input.ledBacklight),
-      Boolean(input.installation)
-    )
+    const dc = typeof input.designCode === 'number' && Number.isFinite(input.designCode) ? Math.floor(input.designCode) : 0
+    const mergeKey =
+      input.mergeKey ??
+      mergeKeyFor(
+        input.productId,
+        dc,
+        input.size,
+        input.finish,
+        Boolean(input.woodenFrame),
+        Boolean(input.ledBacklight),
+        Boolean(input.installation)
+      )
     const quantity = Math.min(99, Math.max(1, input.quantity))
     setLines((prev) => {
       const idx = prev.findIndex((l) => l.mergeKey === mergeKey)
@@ -141,7 +149,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const linesText = lines
         .map(
           (l, i) =>
-            `${i + 1}. ${l.title}\n   ${l.priceLabel} × ${l.quantity} = Rs. ${Math.round(l.unitPrice * l.quantity).toLocaleString()}\n   Size: ${l.size} · Finish: ${l.finish} · Wooden Frame: ${l.woodenFrame ? 'Yes' : 'No'} · LED Backlight: ${l.ledBacklight ? 'Yes' : 'No'} · Installation: ${l.installation ? 'Yes' : 'No'}\n   ${typeof window !== 'undefined' ? `${window.location.origin}/products/${l.categorySlug}/${l.slug}` : ''}`
+            `${i + 1}. ${l.title}\n   ${l.priceLabel} × ${l.quantity} = Rs. ${Math.round(l.unitPrice * l.quantity).toLocaleString()}\n   Design: ${l.designCode != null && l.designCode > 0 ? l.designCode : '—'}\n   Size: ${l.size} · Finish: ${l.finish} · Wooden Frame: ${l.woodenFrame ? 'Yes' : 'No'} · LED Backlight: ${l.ledBacklight ? 'Yes' : 'No'} · Installation: ${l.installation ? 'Yes' : 'No'}\n   ${typeof window !== 'undefined' ? `${window.location.origin}/products/${l.categorySlug}/${l.slug}` : ''}`
         )
         .join('\n\n')
       const body = [
@@ -195,7 +203,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function TopbarCartButton() {
+export const TopbarCartButton = memo(function TopbarCartButton() {
   const { totalQuantity, openDrawer } = useCart()
   return (
     <button
@@ -220,7 +228,7 @@ export function TopbarCartButton() {
       <span className="nav-label">Cart</span>
     </button>
   )
-}
+})
 
 function CartDrawer() {
   const {
@@ -280,7 +288,7 @@ function CartDrawer() {
             {lines.map((line) => (
               <li key={line.mergeKey} className="cart-drawer-line">
                 <Link to={`/products/${line.categorySlug}/${line.slug}`} className="cart-drawer-line-img-wrap" onClick={closeDrawer}>
-                  <img src={line.imageUrl} alt="" className="cart-drawer-line-img" />
+                  <img src={line.imageUrl} alt="" className="cart-drawer-line-img" loading="lazy" decoding="async" />
                 </Link>
                 <div className="cart-drawer-line-body">
                   <Link to={`/products/${line.categorySlug}/${line.slug}`} className="cart-drawer-line-title" onClick={closeDrawer}>
@@ -295,6 +303,14 @@ function CartDrawer() {
                     <span className="cart-drawer-line-dot" aria-hidden>
                       ·
                     </span>
+                    {line.designCode != null && line.designCode > 0 ? (
+                      <>
+                        <span>Design {line.designCode}</span>
+                        <span className="cart-drawer-line-dot" aria-hidden>
+                          ·
+                        </span>
+                      </>
+                    ) : null}
                     <span>{line.finish}</span>
                     <span className="cart-drawer-line-dot" aria-hidden>
                       ·

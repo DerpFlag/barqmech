@@ -9,7 +9,22 @@ type IntroHeroProps = {
   onLeadReveal?: () => void
   playbackRate?: number
   revealLeadSeconds?: number
+  /** End intro this many seconds before the physical file ends (tail trim). Lead reveal counts down to this point. */
+  endTrimSeconds?: number
   children?: ReactNode
+}
+
+/** True when buffered ranges cover the full timeline (within a small epsilon). */
+function isVideoFullyBuffered(video: HTMLVideoElement): boolean {
+  const d = video.duration
+  if (!Number.isFinite(d) || d <= 0) return false
+  const { buffered } = video
+  if (buffered.length === 0) return false
+  try {
+    return buffered.start(0) <= 0.3 && buffered.end(buffered.length - 1) >= d - 0.3
+  } catch {
+    return false
+  }
 }
 
 export function IntroHero({
@@ -20,6 +35,7 @@ export function IntroHero({
   onLeadReveal,
   playbackRate = 1,
   revealLeadSeconds = 0,
+  endTrimSeconds = 0,
   children,
 }: IntroHeroProps) {
   const heroRef = useRef<HTMLElement>(null)
@@ -37,9 +53,8 @@ export function IntroHero({
   }, [videoSrc])
 
   /**
-   * Start playback only after `canplaythrough` (browser thinks it can play without rebuffering),
-   * not on `readyState` alone — that often fires too early on mobile and causes stutter.
-   * Long fallback only if `canplaythrough` never fires (unusual).
+   * Stay on the first decoded frame until the asset is buffered end-to-end, then play.
+   * Avoids mid-play rebuffer jank at the cost of a longer intro wait on slow networks.
    */
   useEffect(() => {
     const video = videoRef.current
@@ -50,24 +65,61 @@ export function IntroHero({
 
     const tryPlay = () => {
       if (cancelled || started || introDoneRef.current) return
+      if (!isVideoFullyBuffered(video)) return
       started = true
       void video.play().catch(() => {
         /* autoplay policies / abort — ignore */
       })
     }
 
-    const onCanPlayThrough = () => tryPlay()
-    video.addEventListener('canplaythrough', onCanPlayThrough, { once: true })
+    const primeFirstFrame = () => {
+      video.pause()
+      if (video.currentTime > 0.001) video.currentTime = 0
+    }
 
-    const fallbackMs = 20000
+    const onMaybeStart = () => tryPlay()
+
+    video.pause()
+    video.addEventListener('progress', onMaybeStart)
+    video.addEventListener('suspend', onMaybeStart)
+
+    const onLoadedMetadata = () => {
+      primeFirstFrame()
+      tryPlay()
+    }
+    video.addEventListener('loadedmetadata', onLoadedMetadata)
+
+    // First frame decoded for current time (typically 0) — redraw canvas ASAP.
+    const onLoadedData = () => onMaybeStart()
+    video.addEventListener('loadeddata', onLoadedData)
+
+    if (!cancelled && video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+      primeFirstFrame()
+      onMaybeStart()
+    }
+
+    queueMicrotask(() => {
+      if (!cancelled) {
+        primeFirstFrame()
+        onMaybeStart()
+      }
+    })
+
+    const fallbackMs = 120_000
     const fallbackId = window.setTimeout(() => {
-      if (!cancelled && !started) tryPlay()
+      if (!cancelled && !started && !introDoneRef.current) {
+        started = true
+        void video.play().catch(() => {})
+      }
     }, fallbackMs)
 
     return () => {
       cancelled = true
       window.clearTimeout(fallbackId)
-      video.removeEventListener('canplaythrough', onCanPlayThrough)
+      video.removeEventListener('progress', onMaybeStart)
+      video.removeEventListener('suspend', onMaybeStart)
+      video.removeEventListener('loadedmetadata', onLoadedMetadata)
+      video.removeEventListener('loadeddata', onLoadedData)
     }
   }, [videoSrc, introDone])
 
@@ -90,7 +142,7 @@ export function IntroHero({
     const hero = heroRef.current
     if (!video || !canvas || !hero) return
 
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) return
 
     let cancelled = false
@@ -111,7 +163,9 @@ export function IntroHero({
 
     const resizeCanvas = () => {
       const rect = hero.getBoundingClientRect()
-      dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1), 2)
+      const narrow = window.innerWidth <= 920
+      const maxDpr = narrow ? 1.35 : 2
+      dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1), maxDpr)
       canvasWidth = Math.max(1, Math.floor(rect.width * dpr))
       canvasHeight = Math.max(1, Math.floor(rect.height * dpr))
       canvas.width = canvasWidth
@@ -218,8 +272,6 @@ export function IntroHero({
       cancelVideoFrameCallback?: (handle: number) => void
     }
 
-    let idleFrames = 0
-
     const scheduleNextDraw = () => {
       if (cancelled || introDoneRef.current) return
 
@@ -229,6 +281,10 @@ export function IntroHero({
         typeof vWithRvfc.requestVideoFrameCallback === 'function' && videoReady && playing
 
       if (useRvfc) {
+        if (rafId) {
+          window.cancelAnimationFrame(rafId)
+          rafId = 0
+        }
         const id = vWithRvfc.requestVideoFrameCallback!(() => {
           drawFrame()
         })
@@ -245,12 +301,9 @@ export function IntroHero({
       if (cancelled || introDoneRef.current) return
 
       const videoReady = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0
-      const playing = !video.paused && !video.ended
 
       if (videoReady) {
-        if (playing || idleFrames++ % 4 === 0) {
-          drawSourceFrame(video, video.videoWidth, video.videoHeight)
-        }
+        drawSourceFrame(video, video.videoWidth, video.videoHeight)
       } else if (posterSrc && posterLoaded && poster.naturalWidth > 0 && poster.naturalHeight > 0) {
         drawSourceFrame(poster, poster.naturalWidth, poster.naturalHeight)
       }
@@ -266,6 +319,8 @@ export function IntroHero({
       window.clearTimeout(resizeDebounce)
       resizeDebounce = window.setTimeout(() => {
         resizeCanvas()
+        // Setting canvas width/height clears pixels; repaint immediately to avoid a bright/empty flash.
+        drawFrame()
       }, 100)
     })
     resizeObserver.observe(hero)
@@ -298,16 +353,36 @@ export function IntroHero({
     }
   }
 
+  const finalizeIntro = () => {
+    if (introDoneRef.current) return
+    if (onLeadReveal && !leadRevealSentRef.current && revealLeadSeconds > 0) {
+      leadRevealSentRef.current = true
+      onLeadReveal()
+    }
+    handleIntroReveal()
+    handleIntroFinish()
+  }
+
   const handleTimeUpdate = () => {
     const video = videoRef.current
     if (!video || !Number.isFinite(video.duration)) return
-    const remaining = video.duration - video.currentTime
+    const duration = video.duration
+    const trim = Math.max(0, endTrimSeconds)
+    const effectiveEnd = Math.max(0.08, duration - trim)
+
+    if (trim > 0 && video.currentTime >= effectiveEnd - 0.05) {
+      video.pause()
+      finalizeIntro()
+      return
+    }
+
+    const remainingToTrimmedEnd = effectiveEnd - video.currentTime
     if (
       onLeadReveal &&
       !leadRevealSentRef.current &&
       revealLeadSeconds > 0 &&
-      remaining <= revealLeadSeconds + 0.05 &&
-      remaining > 0.02
+      remainingToTrimmedEnd <= revealLeadSeconds + 0.4 &&
+      remainingToTrimmedEnd > 0.02
     ) {
       leadRevealSentRef.current = true
       onLeadReveal()
@@ -325,14 +400,7 @@ export function IntroHero({
         playsInline
         preload="auto"
         loop={false}
-        onEnded={() => {
-          if (onLeadReveal && !leadRevealSentRef.current && revealLeadSeconds > 0) {
-            leadRevealSentRef.current = true
-            onLeadReveal()
-          }
-          handleIntroReveal()
-          handleIntroFinish()
-        }}
+        onEnded={() => finalizeIntro()}
         onTimeUpdate={handleTimeUpdate}
       />
       {children}
