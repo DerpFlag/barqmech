@@ -1,26 +1,20 @@
 import introVideoUrl from '../../../Media/Final Video.mp4?url'
 import finalLogoUrl from '../../../Media/Final Logo - Copy.png?url'
-import catDoors1 from '../../../Media/category pics/Doors, Dividers & Gates/doors-dividers-and-gates-01.jpg?url'
-import catDoors2 from '../../../Media/category pics/Doors, Dividers & Gates/doors-dividers-and-gates-04.jpg?url'
-import catDoors3 from '../../../Media/category pics/Doors, Dividers & Gates/doors-dividers-and-gates-06.jpg?url'
-import catIslamic1 from '../../../Media/category pics/Islamic & Decorative Screens/islamic-and-decorative-screens-01.jpg?url'
-import catIslamic2 from '../../../Media/category pics/Islamic & Decorative Screens/islamic-and-decorative-screens-03.jpg?url'
-import catIslamic3 from '../../../Media/category pics/Islamic & Decorative Screens/islamic-and-decorative-screens-04.jpg?url'
-import catLamps1 from '../../../Media/category pics/Lamps & Lighting/lamps-and-lighting-01.jpg?url'
-import catLamps2 from '../../../Media/category pics/Lamps & Lighting/lamps-and-lighting-02.jpg?url'
-import catLamps3 from '../../../Media/category pics/Lamps & Lighting/lamps-and-lighting-04.jpg?url'
-import catMetal1 from '../../../Media/category pics/Metal Arts & Custom Fabrication/metal-arts-and-custom-fabrication-01.jpg?url'
-import catMetal2 from '../../../Media/category pics/Metal Arts & Custom Fabrication/metal-arts-and-custom-fabrication-03.jpg?url'
-import catMetal3 from '../../../Media/category pics/Metal Arts & Custom Fabrication/metal-arts-and-custom-fabrication-05.jpg?url'
-import catRacks1 from '../../../Media/category pics/Racks & Storage/racks-and-storage-01.jpg?url'
-import catRacks2 from '../../../Media/category pics/Racks & Storage/racks-and-storage-02.jpg?url'
-import catRacks3 from '../../../Media/category pics/Racks & Storage/racks-and-storage-04.jpg?url'
-import catStairs1 from '../../../Media/category pics/Stairs & Railings/stairs-and-railings-01.jpg?url'
-import catStairs2 from '../../../Media/category pics/Stairs & Railings/stairs-and-railings-03.jpg?url'
-import catStairs3 from '../../../Media/category pics/Stairs & Railings/stairs-and-railings-06.jpg?url'
-import catWalls1 from '../../../Media/category pics/Walls, Windows & Ceiling Panels/walls-windows-and-ceiling-panels-01.jpg?url'
-import catWalls2 from '../../../Media/category pics/Walls, Windows & Ceiling Panels/walls-windows-and-ceiling-panels-08.jpg?url'
-import catWalls3 from '../../../Media/category pics/Walls, Windows & Ceiling Panels/walls-windows-and-ceiling-panels-10.jpg?url'
+
+// Eagerly import all JPG/PNG/WebP category pics so homepage tiles can rotate through every asset
+// inside each category folder (not just three hard-coded ones).
+const categoryPics = import.meta.glob('../../../Media/category pics/**/*.{jpg,jpeg,png,webp}', {
+  eager: true,
+  as: 'url',
+}) as Record<string, string>
+
+function imagesForFolder(folderName: string): string[] {
+  const prefix = `../../../Media/category pics/${folderName}/`
+  return Object.entries(categoryPics)
+    .filter(([path]) => path.startsWith(prefix))
+    .map(([, url]) => url)
+    .sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base', numeric: true }))
+}
 
 export { introVideoUrl, finalLogoUrl }
 
@@ -53,49 +47,49 @@ export const galleryTiles = [
   {
     id: 'metal-arts-custom-fabrication',
     title: 'Metal Arts & Custom Fabrication',
-    images: [catMetal1, catMetal2, catMetal3],
+    images: imagesForFolder('Metal Arts & Custom Fabrication'),
     intervalMs: 3600,
     className: 'tile-a',
   },
   {
     id: 'doors-dividers-gates',
     title: 'Doors, Dividers & Gates',
-    images: [catDoors1, catDoors2, catDoors3],
+    images: imagesForFolder('Doors, Dividers & Gates'),
     intervalMs: 2900,
     className: 'tile-b',
   },
   {
     id: 'racks-storage',
     title: 'Racks & Storage',
-    images: [catRacks1, catRacks2, catRacks3],
+    images: imagesForFolder('Racks & Storage'),
     intervalMs: 4200,
     className: 'tile-c',
   },
   {
     id: 'lamps-lighting',
     title: 'Lamps & Lighting',
-    images: [catLamps1, catLamps2, catLamps3],
+    images: imagesForFolder('Lamps & Lighting'),
     intervalMs: 3300,
     className: 'tile-d',
   },
   {
     id: 'stairs-railings',
     title: 'Stairs & Railings',
-    images: [catStairs1, catStairs2, catStairs3],
+    images: imagesForFolder('Stairs & Railings'),
     intervalMs: 2600,
     className: 'tile-e',
   },
   {
     id: 'islamic-decorative-screens',
     title: 'Islamic & Decorative Screens',
-    images: [catIslamic1, catIslamic2, catIslamic3],
+    images: imagesForFolder('Islamic & Decorative Screens'),
     intervalMs: 3900,
     className: 'tile-f',
   },
   {
     id: 'walls-windows-ceiling-panels',
     title: 'Walls, Windows & Ceiling Panels',
-    images: [catWalls1, catWalls2, catWalls3],
+    images: imagesForFolder('Walls, Windows & Ceiling Panels'),
     intervalMs: 3500,
     className: 'tile-g',
   },
