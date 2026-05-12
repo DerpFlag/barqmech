@@ -43,6 +43,8 @@ export function IntroHero({
   const videoRef = useRef<HTMLVideoElement>(null)
   const introDoneRef = useRef(false)
   const leadRevealSentRef = useRef(false)
+  /** Updated each render so a late watchdog can call the latest `finalizeIntro`. */
+  const finalizeIntroRef = useRef<() => void>(() => {})
 
   useEffect(() => {
     introDoneRef.current = introDone
@@ -74,7 +76,8 @@ export function IntroHero({
 
     const tryPlay = () => {
       if (cancelled || started || introDoneRef.current) return
-      const enough = video.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA
+      // HAVE_FUTURE_DATA (3) starts sooner than HAVE_ENOUGH_DATA (4); some hosts stall at 3 until play().
+      const enough = video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA
       if (isVideoFullyBuffered(video) || enough) startPlayback()
     }
 
@@ -111,7 +114,7 @@ export function IntroHero({
       }
     })
 
-    const fallbackMs = 18_000
+    const fallbackMs = 10_000
     const fallbackId = window.setTimeout(() => {
       if (!cancelled && !started && !introDoneRef.current) startPlayback()
     }, fallbackMs)
@@ -161,8 +164,12 @@ export function IntroHero({
       poster.src = posterSrc
     }
     let posterLoaded = false
+    let posterFailed = false
     poster.onload = () => {
       posterLoaded = true
+    }
+    poster.onerror = () => {
+      posterFailed = true
     }
 
     const resizeCanvas = () => {
@@ -310,6 +317,10 @@ export function IntroHero({
         drawSourceFrame(video, video.videoWidth, video.videoHeight)
       } else if (posterSrc && posterLoaded && poster.naturalWidth > 0 && poster.naturalHeight > 0) {
         drawSourceFrame(poster, poster.naturalWidth, poster.naturalHeight)
+      } else if (posterFailed || (posterSrc && !posterLoaded)) {
+        // Poster missing or still loading: paint a neutral plate so the viewport is not empty/black.
+        ctx.fillStyle = '#0d0d10'
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight)
       }
 
       scheduleNextDraw()
@@ -338,6 +349,7 @@ export function IntroHero({
       }
       resizeObserver.disconnect()
       poster.onload = null
+      poster.onerror = null
     }
   }, [posterSrc, introDone])
 
@@ -366,6 +378,17 @@ export function IntroHero({
     handleIntroReveal()
     handleIntroFinish()
   }
+
+  finalizeIntroRef.current = finalizeIntro
+
+  /** Never trap the user on an all-black intro (failed poster, stalled decode, play() rejection). */
+  useEffect(() => {
+    if (introDone) return
+    const id = window.setTimeout(() => {
+      if (!introDoneRef.current) finalizeIntroRef.current()
+    }, 22_000)
+    return () => window.clearTimeout(id)
+  }, [introDone])
 
   const handleTimeUpdate = () => {
     const video = videoRef.current
@@ -400,6 +423,7 @@ export function IntroHero({
         ref={videoRef}
         className="hero-video"
         src={videoSrc}
+        poster={posterSrc}
         muted
         playsInline
         preload="auto"
