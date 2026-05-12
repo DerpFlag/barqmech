@@ -34,7 +34,9 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
-.cursor/
+.cursor/**
+!.cursor/rules/
+!.cursor/rules/**
 
 # Vercel
 .vercel/

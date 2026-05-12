@@ -1,0 +1,23 @@
+---
+description: BarqMech — agent runs git and Supabase work; do not defer to user for commits or DB/Storage
+alwaysApply: true
+---
+
+# Autonomous git and Supabase (BarqMech)
+
+## GitHub
+
+- When you finish a coherent change set, **commit and push to `origin/main` yourself** (stage only relevant files; do not add unrelated untracked assets unless the user asked).
+- **Do not** ask the user to “please commit” or “run git push” for routine work. Only mention git if something blocks you (e.g. auth failure they must fix locally).
+
+## Supabase and catalog data
+
+- **`Media/Keys.txt`** is gitignored and holds Supabase URL, service role key, and related secrets. **Use it** for one-off Node scripts: read the file, parse the project URL and **service role** line (never echo or log full keys; never commit this file).
+- For **`store/scripts/*.mjs`** that expect env vars, you may inject parsed values into `process.env` in the same shell before `node`, or use a short inline script that reads `Media/Keys.txt` — same security discipline.
+- **Do not** ask the user to “run the import on Supabase” or “paste keys” when you can run `import-finalized-catalog.mjs`, `rebuild-image-urls-from-storage.mjs`, or targeted API calls yourself **when the workspace has the required inputs** (e.g. `Media/Finalized` + CSV for full import).
+- If **`Media/Finalized`** or **`prices_summary.csv`** is missing from the workspace, say so briefly and what you did without it; do not pretend the import ran.
+
+## Secrets hygiene
+
+- Never paste service role keys, DB passwords, or API keys into chat, commits, or tracked docs.
+- If keys may have been exposed, recommend rotation in plain language without repeating the secret.
