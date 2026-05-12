@@ -82,8 +82,10 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
       })
       return
     }
-    setLoading(true)
-    setError(null)
+    startTransition(() => {
+      setLoading(true)
+      setError(null)
+    })
     try {
       const supabase = getSupabaseBrowserClient()
       const { data: prodRows, error: pErr } = await supabase

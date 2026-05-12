@@ -184,7 +184,12 @@ export function IntroHero({
       return { x, y, drawW, drawH }
     }
 
+    /** Avoid writing CSS vars every frame when layout is unchanged (style recalc competes with video paint). */
+    let panelLayoutKey = ''
     const setPanelCenters = (x: number) => {
+      const key = `${x}|${canvasWidth}`
+      if (key === panelLayoutKey) return
+      panelLayoutKey = key
       const leftCenterPct = (x / 2 / canvasWidth) * 100
       const rightCenterPct = 100 - leftCenterPct
       hero.style.setProperty('--panel-left-center', `${leftCenterPct}%`)

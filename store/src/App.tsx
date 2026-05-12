@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, startTransition, type FormEvent } from 'react'
 import { lazy, Suspense } from 'react'
 import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -29,6 +29,11 @@ function HomePage() {
   const [introDone, setIntroDone] = useState(false)
   /** True ~2s before the intro video ends — mount chrome + start fades while video still plays. */
   const [introLeadReveal, setIntroLeadReveal] = useState(false)
+  /** Mount heavy `<main>` after the first post-reveal paint so layout does not hitch the intro canvas. */
+  const [deferredMainReady, setDeferredMainReady] = useState(false)
+  /** Carousel / resize effects only when `<main>` is mounted (or intro fully ended). */
+  const homeEffectsReady = introDone || (introLeadReveal && deferredMainReady)
+
   const [heroCopyVisible, setHeroCopyVisible] = useState(false)
   const [uiVisible, setUiVisible] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -44,6 +49,29 @@ function HomePage() {
   const [featuredImageIndexes, setFeaturedImageIndexes] = useState<Record<string, number>>({})
   const [featuredStep, setFeaturedStep] = useState(25)
 
+  const scheduleDeferredMainPaint = useCallback(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        startTransition(() => {
+          setDeferredMainReady(true)
+        })
+      })
+    })
+  }, [])
+
+  const handleIntroEnded = useCallback(() => setIntroDone(true), [])
+  const handleLeadReveal = useCallback(() => {
+    setIntroLeadReveal(true)
+    setHeroCopyVisible(true)
+    document.body.classList.remove('intro-playing')
+    window.setTimeout(() => setUiVisible(true), 100)
+    scheduleDeferredMainPaint()
+  }, [scheduleDeferredMainPaint])
+
+  useEffect(() => {
+    if (introDone) setDeferredMainReady(true)
+  }, [introDone])
+
   /** After the video ends: ensure overlay + page chrome are visible (lead reveal usually did this earlier). */
   useEffect(() => {
     if (!introDone) return
@@ -56,6 +84,7 @@ function HomePage() {
   }, [introDone])
 
   useEffect(() => {
+    if (!homeEffectsReady) return
     const timers = galleryTiles.map((tile) =>
       window.setInterval(() => {
         const len = tile.images.length
@@ -64,9 +93,10 @@ function HomePage() {
       }, tile.intervalMs)
     )
     return () => timers.forEach((timer) => window.clearInterval(timer))
-  }, [])
+  }, [homeEffectsReady])
 
   useEffect(() => {
+    if (!homeEffectsReady) return
     setFeaturedImageIndexes((prev) => {
       const next = { ...prev }
       for (const p of products) {
@@ -74,9 +104,10 @@ function HomePage() {
       }
       return next
     })
-  }, [products])
+  }, [homeEffectsReady, products])
 
   useEffect(() => {
+    if (!homeEffectsReady) return
     const timers = featuredCategories.map((category, categoryIndex) =>
       window.setInterval(() => {
         const categoryItems = products.filter((item) => item.category === category)
@@ -85,10 +116,10 @@ function HomePage() {
       }, 3000 + categoryIndex * 280)
     )
     return () => timers.forEach((timer) => window.clearInterval(timer))
-  }, [products])
+  }, [homeEffectsReady, products])
 
   useEffect(() => {
-    if (products.length === 0) return
+    if (!homeEffectsReady || products.length === 0) return
     const timer = window.setInterval(() => {
       setFeaturedImageIndexes((prev) =>
         Object.fromEntries(
@@ -97,9 +128,10 @@ function HomePage() {
       )
     }, 2600)
     return () => window.clearInterval(timer)
-  }, [products])
+  }, [homeEffectsReady, products])
 
   useEffect(() => {
+    if (!homeEffectsReady) return
     const updateFeaturedStep = () => {
       if (window.innerWidth <= 680) return setFeaturedStep(100)
       if (window.innerWidth <= 980) return setFeaturedStep(50)
@@ -108,7 +140,7 @@ function HomePage() {
     updateFeaturedStep()
     window.addEventListener('resize', updateFeaturedStep)
     return () => window.removeEventListener('resize', updateFeaturedStep)
-  }, [])
+  }, [homeEffectsReady])
 
   const scrollToSection = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const goToProducts = () => navigate('/products')
@@ -240,13 +272,8 @@ function HomePage() {
       <IntroHero
         videoSrc={introVideoUrl}
         introDone={introDone}
-        onIntroEnded={() => setIntroDone(true)}
-        onLeadReveal={() => {
-          setIntroLeadReveal(true)
-          setHeroCopyVisible(true)
-          document.body.classList.remove('intro-playing')
-          window.setTimeout(() => setUiVisible(true), 100)
-        }}
+        onIntroEnded={handleIntroEnded}
+        onLeadReveal={handleLeadReveal}
         playbackRate={1.5}
         revealLeadSeconds={2}
         endTrimSeconds={1.5}
@@ -262,7 +289,7 @@ function HomePage() {
 
       <div className="hero-below-fade" aria-hidden />
 
-      {(introLeadReveal || introDone) && (
+      {(introDone || (introLeadReveal && deferredMainReady)) && (
         <section className={`mobile-copy ${uiVisible ? 'visible' : ''}`}>
           <p className="mobile-line mobile-line-headline">
             Waves of change with<br />
@@ -275,7 +302,7 @@ function HomePage() {
         </section>
       )}
 
-      {(introLeadReveal || introDone) && (
+      {(introDone || (introLeadReveal && deferredMainReady)) && (
         <main className={`site-content ${uiVisible ? 'visible' : ''}`}>
           <section className="categories-section" id="collections"><div className="section-head"><h2>Product Categories</h2><p>Browse our core metal cutting capabilities below.</p></div></section>
           <section className="mosaic-section" aria-label="Category image gallery"><div className="mosaic-grid">{galleryTiles.map((tile) => {const activeIndex = galleryIndexes[tile.id] ?? 0; const targetCategory = galleryTileRouteCategory[tile.id]; return <article key={tile.id} className={`mosaic-tile ${tile.className}`}><div className="mosaic-image-stack">{tile.images.map((image, index) => <img key={`${tile.id}-${image}`} src={image} alt={tile.title} className={`mosaic-image ${index === activeIndex ? 'active' : ''}`} loading="lazy" decoding="async" />)}</div><div className="mosaic-overlay"><h3>{tile.title}</h3><Link to={`/products?category=${categorySlugs[targetCategory]}`} className="mosaic-discover-btn">Discover</Link></div></article>})}</div></section>
