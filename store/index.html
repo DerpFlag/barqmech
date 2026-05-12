@@ -13,10 +13,34 @@
     <link rel="apple-touch-icon" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BarqMech — Store</title>
+    <script>
+      (function () {
+        function show(msg) {
+          var r = document.getElementById('root')
+          if (!r || r.dataset.bmFatal) return
+          r.dataset.bmFatal = '1'
+          var esc = String(msg).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          r.innerHTML =
+            '<div style="padding:2rem;font-family:system-ui,sans-serif;max-width:40rem;color:#fecaca;background:#140808;border:1px solid #450a0a;border-radius:10px;margin:1rem auto">' +
+            '<h1 style="font-size:1.15rem;margin:0 0 0.75rem">Could not load app script</h1>' +
+            '<p style="margin:0 0 1rem;word-break:break-all;color:#e2e8f0;font-size:0.9rem">' +
+            esc +
+            '</p>' +
+            '<p style="margin:0;color:#94a3b8;font-size:0.88rem">Hard refresh (Ctrl+Shift+R). Check Network for a 404 on the <code>index-*.js</code> file.</p></div>'
+        }
+        window.addEventListener(
+          'error',
+          function (ev) {
+            var t = ev.target
+            if (t && t !== window && t.tagName === 'SCRIPT' && t.src) show('Failed to load: ' + t.src)
+          },
+          true,
+        )
+      })()
+    </script>
   </head>
   <body>
     <div id="root">
-      <!-- Replaced on first React paint. If this stays visible, the JS bundle did not run (404, cache, or runtime error). -->
       <p
         style="
           margin: 0;
