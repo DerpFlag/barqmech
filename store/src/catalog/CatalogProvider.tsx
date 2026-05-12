@@ -1,4 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, startTransition, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  startTransition,
+  type ReactNode,
+} from 'react'
 import { getSupabaseBrowserClient, isSupabaseCatalogConfigured } from '../lib/supabaseClient.ts'
 import type { CatalogProduct, CatalogVariantRow } from './types.ts'
 import { minListPricePkr } from './pricing.ts'
@@ -62,10 +71,19 @@ type CatalogContextValue = {
 
 const CatalogContext = createContext<CatalogContextValue | null>(null)
 
+/** Products only — avoids re-rendering home when `loading` flips (same catalog data). */
+const CatalogProductsContext = createContext<CatalogProduct[] | null>(null)
+
 export function useCatalog() {
   const ctx = useContext(CatalogContext)
   if (!ctx) throw new Error('useCatalog must be used within CatalogProvider')
   return ctx
+}
+
+export function useCatalogProducts(): CatalogProduct[] {
+  const products = useContext(CatalogProductsContext)
+  if (products === null) throw new Error('useCatalogProducts must be used within CatalogProvider')
+  return products
 }
 
 export function CatalogProvider({ children }: { children: ReactNode }) {
@@ -144,5 +162,9 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
     [products, loading, error, load]
   )
 
-  return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>
+  return (
+    <CatalogContext.Provider value={value}>
+      <CatalogProductsContext.Provider value={products}>{children}</CatalogProductsContext.Provider>
+    </CatalogContext.Provider>
+  )
 }

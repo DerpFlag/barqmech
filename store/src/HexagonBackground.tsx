@@ -71,6 +71,7 @@ export function HexagonBackground({
       if (frameRef.current != null) cancelAnimationFrame(frameRef.current)
       frameRef.current = requestAnimationFrame(() => {
         frameRef.current = null
+        if (document.body.classList.contains('intro-playing')) return
         setActive(resolveCell(e.clientX, e.clientY))
       })
     }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, startTransition, type FormEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, startTransition, type FormEvent } from 'react'
 import { lazy, Suspense } from 'react'
 import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -11,7 +11,7 @@ import {
   introVideoUrl,
   type FeaturedCategory,
 } from './data/catalog.ts'
-import { CatalogProvider, useCatalog } from './catalog/CatalogProvider.tsx'
+import { CatalogProvider, useCatalogProducts } from './catalog/CatalogProvider.tsx'
 import { IntroHero } from './IntroHero.tsx'
 import { HexagonBackground } from './HexagonBackground.tsx'
 import { CartProvider, TopbarCartButton } from './cart/CartContext.tsx'
@@ -24,7 +24,7 @@ const CheckoutSuccessPage = lazy(() => import('./routes/CheckoutSuccessRoute.tsx
 const AdminPageLazy = lazy(() => import('./AdminPage.tsx').then((m) => ({ default: m.AdminPage })))
 
 function HomePage() {
-  const { products } = useCatalog()
+  const products = useCatalogProducts()
   const navigate = useNavigate()
   const [introDone, setIntroDone] = useState(false)
   /** True ~2s before the intro video ends — mount chrome + start fades while video still plays. */
@@ -48,6 +48,11 @@ function HomePage() {
   const [featuredIndexes, setFeaturedIndexes] = useState<Record<FeaturedCategory, number>>({ Islamic: 0, Artwork: 0, Panels: 0, Misc: 0 })
   const [featuredImageIndexes, setFeaturedImageIndexes] = useState<Record<string, number>>({})
   const [featuredStep, setFeaturedStep] = useState(25)
+
+  /** Mosaic + featured blocks: pause carousel timers until near viewport (saves work while intro / hero fills screen). */
+  const retailCarouselRootRef = useRef<HTMLDivElement>(null)
+  const [retailCarouselInView, setRetailCarouselInView] = useState(false)
+  const carouselEngaged = homeEffectsReady && retailCarouselInView
 
   const scheduleDeferredMainPaint = useCallback(() => {
     requestAnimationFrame(() => {
@@ -84,7 +89,7 @@ function HomePage() {
   }, [introDone])
 
   useEffect(() => {
-    if (!homeEffectsReady) return
+    if (!carouselEngaged) return
     const timers = galleryTiles.map((tile) =>
       window.setInterval(() => {
         const len = tile.images.length
@@ -93,7 +98,7 @@ function HomePage() {
       }, tile.intervalMs)
     )
     return () => timers.forEach((timer) => window.clearInterval(timer))
-  }, [homeEffectsReady])
+  }, [carouselEngaged])
 
   useEffect(() => {
     if (!homeEffectsReady) return
@@ -107,7 +112,7 @@ function HomePage() {
   }, [homeEffectsReady, products])
 
   useEffect(() => {
-    if (!homeEffectsReady) return
+    if (!carouselEngaged) return
     const timers = featuredCategories.map((category, categoryIndex) =>
       window.setInterval(() => {
         const categoryItems = products.filter((item) => item.category === category)
@@ -116,10 +121,10 @@ function HomePage() {
       }, 3000 + categoryIndex * 280)
     )
     return () => timers.forEach((timer) => window.clearInterval(timer))
-  }, [homeEffectsReady, products])
+  }, [carouselEngaged, products])
 
   useEffect(() => {
-    if (!homeEffectsReady || products.length === 0) return
+    if (!carouselEngaged || products.length === 0) return
     const timer = window.setInterval(() => {
       setFeaturedImageIndexes((prev) =>
         Object.fromEntries(
@@ -128,7 +133,7 @@ function HomePage() {
       )
     }, 2600)
     return () => window.clearInterval(timer)
-  }, [homeEffectsReady, products])
+  }, [carouselEngaged, products])
 
   useEffect(() => {
     if (!homeEffectsReady) return
@@ -140,6 +145,26 @@ function HomePage() {
     updateFeaturedStep()
     window.addEventListener('resize', updateFeaturedStep)
     return () => window.removeEventListener('resize', updateFeaturedStep)
+  }, [homeEffectsReady])
+
+  useLayoutEffect(() => {
+    if (!homeEffectsReady) {
+      setRetailCarouselInView(false)
+      return
+    }
+    const el = retailCarouselRootRef.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        setRetailCarouselInView(entry.isIntersecting)
+      },
+      { threshold: 0, rootMargin: '12% 0px 45% 0px' },
+    )
+    io.observe(el)
+    return () => {
+      io.disconnect()
+      setRetailCarouselInView(false)
+    }
   }, [homeEffectsReady])
 
   const scrollToSection = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -251,7 +276,8 @@ function HomePage() {
                 width={240}
                 height={72}
                 decoding="async"
-                fetchPriority="high"
+                loading="lazy"
+                fetchPriority="low"
               />
               <span className="brand-title">BARQMECH</span>
             </button>
@@ -305,6 +331,7 @@ function HomePage() {
       {(introDone || (introLeadReveal && deferredMainReady)) && (
         <main className={`site-content ${uiVisible ? 'visible' : ''}`}>
           <section className="categories-section" id="collections"><div className="section-head"><h2>Product Categories</h2><p>Browse our core metal cutting capabilities below.</p></div></section>
+          <div ref={retailCarouselRootRef} className="home-retail-carousel-root">
           <section className="mosaic-section" aria-label="Category image gallery"><div className="mosaic-grid">{galleryTiles.map((tile) => {const activeIndex = galleryIndexes[tile.id] ?? 0; const targetCategory = galleryTileRouteCategory[tile.id]; return <article key={tile.id} className={`mosaic-tile ${tile.className}`}><div className="mosaic-image-stack">{tile.images.map((image, index) => <img key={`${tile.id}-${image}`} src={image} alt={tile.title} className={`mosaic-image ${index === activeIndex ? 'active' : ''}`} loading="lazy" decoding="async" />)}</div><div className="mosaic-overlay"><h3>{tile.title}</h3><Link to={`/products?category=${categorySlugs[targetCategory]}`} className="mosaic-discover-btn">Discover</Link></div></article>})}</div></section>
 
           <section className="product-grid-section" id="shop">
@@ -341,6 +368,7 @@ function HomePage() {
               )
             })}
           </section>
+          </div>
 
           <section className="confidence-section" aria-label="Customer confidence highlights">
             <div className="confidence-title-row"><span className="confidence-line" aria-hidden /><h3>Buy with Confidence</h3><span className="confidence-line" aria-hidden /></div>
@@ -349,7 +377,7 @@ function HomePage() {
               <article className="confidence-item"><span className="confidence-icon" aria-hidden><svg viewBox="0 0 24 24" className="confidence-icon-svg"><path d="M12 3a8 8 0 0 0-8 8v5a3 3 0 0 0 3 3h2v-7H6v-1a6 6 0 1 1 12 0v1h-3v7h2a3 3 0 0 0 3-3v-5a8 8 0 0 0-8-8z" /></svg></span><h4>Support 24/7</h4><p>Our team is available 24 hours a day, 7 days a week to help you quickly.</p></article>
               <article className="confidence-item confidence-about"><img src={finalLogoUrl} alt="BarqMech logo" className="confidence-about-logo" loading="lazy" decoding="async" /><h4>About Us</h4><p>Elevating spaces through metal mastery. Barqmech delivers high-precision laser cutting and custom fabrication where innovation meets craftsmanship.</p></article>
             </div>
-          </section>
+      </section>
 
           <section className="confidence-section order-design-heading-section" id="order-design" aria-label="Order custom design heading">
             <div className="confidence-title-row">
@@ -402,9 +430,9 @@ function HomePage() {
                 <div className="contact-info-box"><h4>Response Time</h4><p>We typically respond to inquiries within 2-5 hours during business days. For urgent matters, please call us directly.</p></div>
                 <button type="button" className="book-demo-btn" onClick={() => setDemoPromptOpen((v) => !v)}>Book a Demo</button>
                 {demoPromptOpen && <div className="demo-prompt"><label htmlFor="demo-email">Work Email</label><input id="demo-email" type="email" value={demoEmail} onChange={(e) => setDemoEmail(e.target.value)} placeholder="you@company.com" /><button type="button" onClick={openCalendly} disabled={demoSubmitting}>{demoSubmitting ? 'Verifying Email...' : 'Continue to Calendly'}</button>{demoStatus && <p className={`contact-status ${demoStatus.type}`}>{demoStatus.message}</p>}</div>}
-              </div>
-            </div>
-          </section>
+        </div>
+        </div>
+      </section>
 
           <footer className="site-footer"><p>© {new Date().getFullYear()} BarqMech. All rights reserved.</p><p>Built with innovation in mind.</p></footer>
         </main>

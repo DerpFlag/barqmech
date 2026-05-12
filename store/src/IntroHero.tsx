@@ -221,15 +221,27 @@ export function IntroHero({
     resizeCanvas()
     rafId = window.requestAnimationFrame(drawFrame)
 
+    /** Coalesce ResizeObserver bursts to one canvas resize per frame (avoids backing-store thrash). */
+    let resizeCoalesceRaf = 0
+    const scheduleResizeFromObserver = () => {
+      if (introDoneRef.current || cancelled) return
+      if (resizeCoalesceRaf) return
+      resizeCoalesceRaf = window.requestAnimationFrame(() => {
+        resizeCoalesceRaf = 0
+        if (introDoneRef.current || cancelled) return
+        resizeCanvas()
+      })
+    }
+
     const resizeObserver = new ResizeObserver(() => {
-      if (introDoneRef.current) return
-      resizeCanvas()
+      scheduleResizeFromObserver()
     })
     resizeObserver.observe(hero)
 
     return () => {
       cancelled = true
       window.cancelAnimationFrame(rafId)
+      if (resizeCoalesceRaf) window.cancelAnimationFrame(resizeCoalesceRaf)
       resizeObserver.disconnect()
     }
   }, [introDone])

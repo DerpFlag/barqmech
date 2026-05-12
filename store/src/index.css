@@ -965,6 +965,12 @@ body.intro-playing {
   margin: 0 auto;
 }
 
+/** Bounds mosaic + featured carousels for in-view timers; browser may defer layout/paint when off-screen. */
+.home-retail-carousel-root {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 1400px;
+}
+
 .mosaic-section {
   max-width: 1200px;
   margin: 0 auto;
