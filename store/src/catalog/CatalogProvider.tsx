@@ -36,6 +36,30 @@ function normalizePricing(raw: unknown): CatalogVariantRow['pricing'] {
   return { sizes }
 }
 
+/** Normalize Postgres `text[]` / PostgREST quirks into a string[] of image URLs. */
+function normalizeImageUrls(raw: unknown): string[] {
+  if (raw == null) return []
+  if (Array.isArray(raw)) {
+    return raw.filter((u): u is string => typeof u === 'string' && u.trim().length > 0).map((u) => u.trim())
+  }
+  if (typeof raw === 'string') {
+    const t = raw.trim()
+    if (!t) return []
+    if (t.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(t) as unknown
+        if (Array.isArray(parsed)) {
+          return parsed.filter((u): u is string => typeof u === 'string' && u.trim().length > 0).map((u) => u.trim())
+        }
+      } catch {
+        /* fall through */
+      }
+    }
+    return [t]
+  }
+  return []
+}
+
 function mapProduct(row: RawProduct): CatalogProduct | null {
   const cat = row.category as FeaturedCategory
   if (!['Islamic', 'Artwork', 'Panels', 'Misc'].includes(cat)) return null
@@ -49,7 +73,7 @@ function mapProduct(row: RawProduct): CatalogProduct | null {
     }))
     .sort((a, b) => a.design_code - b.design_code || a.sort_order - b.sort_order)
 
-  const images = row.image_urls ?? []
+  const images = normalizeImageUrls(row.image_urls)
   const base: CatalogProduct = {
     id: row.id,
     slug: row.slug,

@@ -14,6 +14,9 @@
  *   cd store
  *   node --env-file=.env.import.local scripts/import-finalized-catalog.mjs
  *
+ * After import, if `image_urls` ever drifts from Storage, you can resync from bucket objects:
+ *   node --env-file=.env.import.local scripts/rebuild-image-urls-from-storage.mjs
+ *
  * PKR: CSV numeric columns are treated as PKR integers (column names may say _usd).
  */
 import { createClient } from '@supabase/supabase-js'
