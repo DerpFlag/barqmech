@@ -706,6 +706,7 @@ body.intro-playing {
   z-index: 1;
   transform: translateZ(0);
   backface-visibility: hidden;
+  contain: strict;
 }
 
 .hero-video {

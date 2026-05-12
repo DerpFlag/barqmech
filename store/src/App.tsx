@@ -239,7 +239,6 @@ function HomePage() {
 
       <IntroHero
         videoSrc={introVideoUrl}
-        posterSrc={finalLogoUrl}
         introDone={introDone}
         onIntroEnded={() => setIntroDone(true)}
         onLeadReveal={() => {

@@ -2,7 +2,6 @@ import { useEffect, useRef, type ReactNode } from 'react'
 
 type IntroHeroProps = {
   videoSrc: string
-  posterSrc?: string
   introDone: boolean
   onIntroEnded: () => void
   /** Fires once when this many seconds remain (overlay can fade in while video keeps playing). */
@@ -29,7 +28,6 @@ function isVideoFullyBuffered(video: HTMLVideoElement): boolean {
 
 export function IntroHero({
   videoSrc,
-  posterSrc,
   introDone,
   onIntroEnded,
   onLeadReveal,
@@ -43,7 +41,6 @@ export function IntroHero({
   const videoRef = useRef<HTMLVideoElement>(null)
   const introDoneRef = useRef(false)
   const leadRevealSentRef = useRef(false)
-  /** Updated each render so a late watchdog can call the latest `finalizeIntro`. */
   const finalizeIntroRef = useRef<() => void>(() => {})
 
   useEffect(() => {
@@ -54,11 +51,6 @@ export function IntroHero({
     leadRevealSentRef.current = false
   }, [videoSrc])
 
-  /**
-   * Prefer full buffer for smooth playback; when CDN Range requests prevent `buffered` from ever
-   * looking “complete”, fall back to `HAVE_ENOUGH_DATA` / `canplaythrough` so the intro still starts.
-   * (A prior `fetch`+blob prefetch competed with Supabase on first paint and could worsen stalls.)
-   */
   useEffect(() => {
     const video = videoRef.current
     if (!video || introDone) return
@@ -76,7 +68,6 @@ export function IntroHero({
 
     const tryPlay = () => {
       if (cancelled || started || introDoneRef.current) return
-      // HAVE_FUTURE_DATA (3) starts sooner than HAVE_ENOUGH_DATA (4); some hosts stall at 3 until play().
       const enough = video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA
       if (isVideoFullyBuffered(video) || enough) startPlayback()
     }
@@ -149,7 +140,8 @@ export function IntroHero({
     const hero = heroRef.current
     if (!video || !canvas || !hero) return
 
-    const ctx = canvas.getContext('2d', { alpha: false })
+    const ctx =
+      canvas.getContext('2d', { alpha: false, desynchronized: true }) ?? canvas.getContext('2d', { alpha: false })
     if (!ctx) return
 
     let cancelled = false
@@ -159,18 +151,6 @@ export function IntroHero({
     let canvasWidth = 0
     let canvasHeight = 0
     let dpr = 1
-    const poster = new Image()
-    if (posterSrc) {
-      poster.src = posterSrc
-    }
-    let posterLoaded = false
-    let posterFailed = false
-    poster.onload = () => {
-      posterLoaded = true
-    }
-    poster.onerror = () => {
-      posterFailed = true
-    }
 
     const resizeCanvas = () => {
       const rect = hero.getBoundingClientRect()
@@ -185,26 +165,59 @@ export function IntroHero({
       canvas.style.height = `${rect.height}px`
     }
 
-    const drawSourceFrame = (source: CanvasImageSource, sourceW: number, sourceH: number) => {
+    const layoutFrame = (sourceW: number, sourceH: number) => {
       const isMobile = window.innerWidth <= 920
       const containScale = Math.min(canvasWidth / sourceW, canvasHeight / sourceH)
       const coverScale = Math.max(canvasWidth / sourceW, canvasHeight / sourceH)
-      // Keep the "filled" mobile look, but ensure at least ~60% of source stays visible.
       const minVisibleFraction = 0.6
       const maxAllowedScale = Math.min(
         canvasWidth / (sourceW * minVisibleFraction),
-        canvasHeight / (sourceH * minVisibleFraction)
+        canvasHeight / (sourceH * minVisibleFraction),
       )
       const scale = isMobile ? Math.min(coverScale, maxAllowedScale) : containScale
       const drawW = Math.round(sourceW * scale)
       const drawH = Math.round(sourceH * scale)
       const x = Math.round((canvasWidth - drawW) / 2)
       const y = Math.round((canvasHeight - drawH) / 2)
+      return { x, y, drawW, drawH }
+    }
 
+    const setPanelCenters = (x: number) => {
       const leftCenterPct = (x / 2 / canvasWidth) * 100
       const rightCenterPct = 100 - leftCenterPct
       hero.style.setProperty('--panel-left-center', `${leftCenterPct}%`)
       hero.style.setProperty('--panel-right-center', `${rightCenterPct}%`)
+    }
+
+    /** Cheap: first frame / paused hold — no blur passes, no rAF loop. */
+    const paintFrozen = () => {
+      if (cancelled || introDoneRef.current) return
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+      const videoReady = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0
+      if (!videoReady) {
+        ctx.fillStyle = '#0a0a0e'
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+        return
+      }
+      ctx.fillStyle = '#000000'
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+      ctx.imageSmoothingEnabled = true
+      const sw = video.videoWidth
+      const sh = video.videoHeight
+      const { x, y, drawW, drawH } = layoutFrame(sw, sh)
+      setPanelCenters(x)
+      ctx.drawImage(video, 0, 0, sw, sh, x, y, drawW, drawH)
+    }
+
+    /** Heavy: only while video is playing (blur gutters + seams). */
+    const paintPlayingDecorated = () => {
+      if (cancelled || introDoneRef.current) return
+      const sw = video.videoWidth
+      const sh = video.videoHeight
+      if (sw <= 0 || sh <= 0) return
+
+      const { x, y, drawW, drawH } = layoutFrame(sw, sh)
+      setPanelCenters(x)
 
       ctx.clearRect(0, 0, canvasWidth, canvasHeight)
       ctx.imageSmoothingEnabled = true
@@ -216,64 +229,24 @@ export function IntroHero({
       ctx.save()
       ctx.filter = `blur(${Math.max(blur + 8, 24)}px)`
       if (x > 0) {
-        ctx.drawImage(source, 0, 0, strip, sourceH, -pad, 0, x + pad * 2, canvasHeight)
-        ctx.drawImage(
-          source,
-          sourceW - strip,
-          0,
-          strip,
-          sourceH,
-          canvasWidth - x - pad,
-          0,
-          x + pad * 2,
-          canvasHeight
-        )
+        ctx.drawImage(video, 0, 0, strip, sh, -pad, 0, x + pad * 2, canvasHeight)
+        ctx.drawImage(video, sw - strip, 0, strip, sh, canvasWidth - x - pad, 0, x + pad * 2, canvasHeight)
       }
       if (y > 0) {
-        ctx.drawImage(source, 0, 0, sourceW, strip, 0, -pad, canvasWidth, y + pad * 2)
-        ctx.drawImage(
-          source,
-          0,
-          sourceH - strip,
-          sourceW,
-          strip,
-          0,
-          canvasHeight - y - pad,
-          canvasWidth,
-          y + pad * 2
-        )
+        ctx.drawImage(video, 0, 0, sw, strip, 0, -pad, canvasWidth, y + pad * 2)
+        ctx.drawImage(video, 0, sh - strip, sw, strip, 0, canvasHeight - y - pad, canvasWidth, y + pad * 2)
       }
       ctx.restore()
 
-      ctx.drawImage(source, 0, 0, sourceW, sourceH, x, y, drawW, drawH)
+      ctx.drawImage(video, 0, 0, sw, sh, x, y, drawW, drawH)
 
       if (x > 0) {
         const seamW = Math.max(Math.floor(150 * dpr), 1)
         ctx.save()
         ctx.globalAlpha = 0.82
         ctx.filter = `blur(${Math.max(Math.floor(20 * dpr), 10)}px)`
-        ctx.drawImage(
-          source,
-          0,
-          0,
-          strip,
-          sourceH,
-          x - seamW,
-          y,
-          seamW * 2,
-          drawH
-        )
-        ctx.drawImage(
-          source,
-          sourceW - strip,
-          0,
-          strip,
-          sourceH,
-          canvasWidth - x - seamW,
-          y,
-          seamW * 2,
-          drawH
-        )
+        ctx.drawImage(video, 0, 0, strip, sh, x - seamW, y, seamW * 2, drawH)
+        ctx.drawImage(video, sw - strip, 0, strip, sh, canvasWidth - x - seamW, y, seamW * 2, drawH)
         ctx.restore()
       }
     }
@@ -283,75 +256,96 @@ export function IntroHero({
       cancelVideoFrameCallback?: (handle: number) => void
     }
 
-    const scheduleNextDraw = () => {
+    const stopAnim = () => {
+      if (rafId) {
+        window.cancelAnimationFrame(rafId)
+        rafId = 0
+      }
+      if (rvfcId && typeof vWithRvfc.cancelVideoFrameCallback === 'function') {
+        vWithRvfc.cancelVideoFrameCallback(rvfcId)
+        rvfcId = 0
+      }
+    }
+
+    const schedulePlaying = () => {
       if (cancelled || introDoneRef.current) return
+      if (video.paused || video.ended) return
 
       const videoReady = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0
+      if (!videoReady) return
+
+      paintPlayingDecorated()
+
       const playing = !video.paused && !video.ended
+      if (!playing) return
+
       const useRvfc =
-        typeof vWithRvfc.requestVideoFrameCallback === 'function' && videoReady && playing
+        typeof vWithRvfc.requestVideoFrameCallback === 'function' &&
+        video.readyState >= 2 &&
+        video.videoWidth > 0 &&
+        video.videoHeight > 0
 
       if (useRvfc) {
-        if (rafId) {
-          window.cancelAnimationFrame(rafId)
-          rafId = 0
-        }
         const id = vWithRvfc.requestVideoFrameCallback!(() => {
-          drawFrame()
+          rvfcId = 0
+          schedulePlaying()
         })
         rvfcId = typeof id === 'number' ? id : 0
       } else {
         rafId = window.requestAnimationFrame(() => {
           rafId = 0
-          drawFrame()
+          schedulePlaying()
         })
       }
     }
 
-    const drawFrame = () => {
-      if (cancelled || introDoneRef.current) return
-
-      const videoReady = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0
-
-      if (videoReady) {
-        drawSourceFrame(video, video.videoWidth, video.videoHeight)
-      } else if (posterSrc && posterLoaded && poster.naturalWidth > 0 && poster.naturalHeight > 0) {
-        drawSourceFrame(poster, poster.naturalWidth, poster.naturalHeight)
-      } else if (posterFailed || (posterSrc && !posterLoaded)) {
-        // Poster missing or still loading: paint a neutral plate so the viewport is not empty/black.
-        ctx.fillStyle = '#0d0d10'
-        ctx.fillRect(0, 0, canvasWidth, canvasHeight)
-      }
-
-      scheduleNextDraw()
+    const onLoadedOrSeeked = () => {
+      if (video.paused && !introDoneRef.current) paintFrozen()
     }
 
+    const onPlaying = () => {
+      stopAnim()
+      schedulePlaying()
+    }
+
+    const onPause = () => {
+      stopAnim()
+      if (!introDoneRef.current) paintFrozen()
+    }
+
+    video.addEventListener('loadeddata', onLoadedOrSeeked)
+    video.addEventListener('seeked', onLoadedOrSeeked)
+    video.addEventListener('playing', onPlaying)
+    video.addEventListener('pause', onPause)
+
     resizeCanvas()
-    drawFrame()
+    paintFrozen()
 
     const resizeObserver = new ResizeObserver(() => {
       if (introDoneRef.current || cancelled) return
       window.clearTimeout(resizeDebounce)
       resizeDebounce = window.setTimeout(() => {
         resizeCanvas()
-        // Setting canvas width/height clears pixels; repaint immediately to avoid a bright/empty flash.
-        drawFrame()
+        if (video.paused || video.ended) paintFrozen()
+        else {
+          stopAnim()
+          schedulePlaying()
+        }
       }, 100)
     })
     resizeObserver.observe(hero)
 
     return () => {
       cancelled = true
+      stopAnim()
       window.clearTimeout(resizeDebounce)
-      if (rafId) window.cancelAnimationFrame(rafId)
-      if (rvfcId && typeof vWithRvfc.cancelVideoFrameCallback === 'function') {
-        vWithRvfc.cancelVideoFrameCallback(rvfcId)
-      }
       resizeObserver.disconnect()
-      poster.onload = null
-      poster.onerror = null
+      video.removeEventListener('loadeddata', onLoadedOrSeeked)
+      video.removeEventListener('seeked', onLoadedOrSeeked)
+      video.removeEventListener('playing', onPlaying)
+      video.removeEventListener('pause', onPause)
     }
-  }, [posterSrc, introDone])
+  }, [introDone])
 
   const handleIntroReveal = () => {
     if (introDoneRef.current) return
@@ -381,7 +375,6 @@ export function IntroHero({
 
   finalizeIntroRef.current = finalizeIntro
 
-  /** Never trap the user on an all-black intro (failed poster, stalled decode, play() rejection). */
   useEffect(() => {
     if (introDone) return
     const id = window.setTimeout(() => {
@@ -423,7 +416,6 @@ export function IntroHero({
         ref={videoRef}
         className="hero-video"
         src={videoSrc}
-        poster={posterSrc}
         muted
         playsInline
         preload="auto"

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, startTransition, type ReactNode } from 'react'
 import { getSupabaseBrowserClient, isSupabaseCatalogConfigured } from '../lib/supabaseClient.ts'
 import type { CatalogProduct, CatalogVariantRow } from './types.ts'
 import { minListPricePkr } from './pricing.ts'
@@ -75,9 +75,11 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
 
   const load = useCallback(async () => {
     if (!isSupabaseCatalogConfigured) {
-      setProducts([])
-      setLoading(false)
-      setError('Catalog not configured (set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY).')
+      startTransition(() => {
+        setProducts([])
+        setLoading(false)
+        setError('Catalog not configured (set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY).')
+      })
       return
     }
     setLoading(true)
@@ -109,12 +111,18 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
         catalog_variants: variantsByProduct.get(p.id) ?? [],
       }))
       const mapped = rows.map(mapProduct).filter((p): p is CatalogProduct => p != null)
-      setProducts(mapped)
+      startTransition(() => {
+        setProducts(mapped)
+      })
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load catalog')
-      setProducts([])
+      startTransition(() => {
+        setError(e instanceof Error ? e.message : 'Failed to load catalog')
+        setProducts([])
+      })
     } finally {
-      setLoading(false)
+      startTransition(() => {
+        setLoading(false)
+      })
     }
   }, [])
 
