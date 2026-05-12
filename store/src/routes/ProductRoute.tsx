@@ -438,7 +438,7 @@ export default function ProductPage() {
                 <div className="product-detail-field">
                   <span className="product-detail-label">Design code</span>
                   <span className="product-detail-label-meta">
-                    Codes {dcRange.min}–{dcRange.max} (matches numbered DXF / listing)
+                    Codes {dcRange.min}–{dcRange.max}
                   </span>
                   <div className="product-detail-design-row">
                     <input
