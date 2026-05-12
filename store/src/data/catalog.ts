@@ -6,14 +6,26 @@ import finalLogoUrl from '../../../Media/Final Logo - Copy.png?url'
 const categoryPics = import.meta.glob('../../../Media/category pics/**/*.{jpg,jpeg,png,webp}', {
   eager: true,
   as: 'url',
-}) as Record<string, string>
+}) as Record<string, unknown>
+
+function toResolvedUrl(value: unknown): string | null {
+  if (typeof value === 'string' && value.length > 0) return value
+  if (value && typeof value === 'object' && 'default' in value) {
+    const d = (value as { default: unknown }).default
+    if (typeof d === 'string' && d.length > 0) return d
+  }
+  return null
+}
 
 function imagesForFolder(folderName: string): string[] {
   const prefix = `../../../Media/category pics/${folderName}/`
-  return Object.entries(categoryPics)
-    .filter(([path]) => path.startsWith(prefix))
-    .map(([, url]) => url)
-    .sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base', numeric: true }))
+  const urls: string[] = []
+  for (const [path, raw] of Object.entries(categoryPics)) {
+    if (!path.startsWith(prefix)) continue
+    const u = toResolvedUrl(raw)
+    if (u) urls.push(u)
+  }
+  return urls.sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base', numeric: true }))
 }
 
 export { introVideoUrl, finalLogoUrl }
