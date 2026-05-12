@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 type IntroHeroProps = {
   videoSrc: string
@@ -43,6 +43,9 @@ export function IntroHero({
   const videoRef = useRef<HTMLVideoElement>(null)
   const introDoneRef = useRef(false)
   const leadRevealSentRef = useRef(false)
+  /** Blob URL from full-file prefetch so `buffered` spans the whole timeline (Range/CDN fragments break `isVideoFullyBuffered`). */
+  const blobUrlRef = useRef<string | null>(null)
+  const [resolvedVideoSrc, setResolvedVideoSrc] = useState<string | null>(null)
 
   useEffect(() => {
     introDoneRef.current = introDone
@@ -53,12 +56,57 @@ export function IntroHero({
   }, [videoSrc])
 
   /**
-   * Stay on the first decoded frame until the asset is buffered end-to-end, then play.
+   * HF (`HF/app/src/App.tsx`) showed a static poster on the canvas (`/initial.png`) until the video
+   * could paint, then relied on `<video autoPlay>`. Here we keep your stricter rule: play only once
+   * the file is fully buffered for smooth playback — prefetch via `fetch` + blob URL makes that
+   * reliable on static hosts (Vercel) where progressive Range requests never satisfy `buffered.end >= duration`.
+   */
+  useEffect(() => {
+    const ac = new AbortController()
+    let cancelled = false
+
+    const revokeBlob = () => {
+      const u = blobUrlRef.current
+      if (u) {
+        URL.revokeObjectURL(u)
+        blobUrlRef.current = null
+      }
+    }
+
+    revokeBlob()
+    setResolvedVideoSrc(null)
+
+    ;(async () => {
+      try {
+        const res = await fetch(videoSrc, { signal: ac.signal, credentials: 'same-origin' })
+        if (!res.ok) throw new Error(String(res.status))
+        const blob = await res.blob()
+        if (cancelled) return
+        revokeBlob()
+        const url = URL.createObjectURL(blob)
+        blobUrlRef.current = url
+        setResolvedVideoSrc(url)
+      } catch {
+        if (ac.signal.aborted || cancelled) return
+        revokeBlob()
+        setResolvedVideoSrc(videoSrc)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      ac.abort()
+      revokeBlob()
+    }
+  }, [videoSrc])
+
+  /**
+   * Stay on poster / first decoded frame until the asset is buffered end-to-end, then play.
    * Avoids mid-play rebuffer jank at the cost of a longer intro wait on slow networks.
    */
   useEffect(() => {
     const video = videoRef.current
-    if (!video || introDone) return
+    if (!video || introDone || !resolvedVideoSrc) return
 
     let cancelled = false
     let started = false
@@ -121,7 +169,7 @@ export function IntroHero({
       video.removeEventListener('loadedmetadata', onLoadedMetadata)
       video.removeEventListener('loadeddata', onLoadedData)
     }
-  }, [videoSrc, introDone])
+  }, [resolvedVideoSrc, introDone])
 
   useEffect(() => {
     const video = videoRef.current
@@ -395,12 +443,13 @@ export function IntroHero({
       <video
         ref={videoRef}
         className="hero-video"
-        src={videoSrc}
+        src={resolvedVideoSrc ?? undefined}
         muted
         playsInline
         preload="auto"
         loop={false}
         onEnded={() => finalizeIntro()}
+        onError={() => finalizeIntro()}
         onTimeUpdate={handleTimeUpdate}
       />
       {children}

@@ -58,7 +58,9 @@ function HomePage() {
   useEffect(() => {
     const timers = galleryTiles.map((tile) =>
       window.setInterval(() => {
-        setGalleryIndexes((prev) => ({ ...prev, [tile.id]: ((prev[tile.id] ?? 0) + 1) % tile.images.length }))
+        const len = tile.images.length
+        if (len <= 0) return
+        setGalleryIndexes((prev) => ({ ...prev, [tile.id]: ((prev[tile.id] ?? 0) + 1) % len }))
       }, tile.intervalMs)
     )
     return () => timers.forEach((timer) => window.clearInterval(timer))
@@ -237,6 +239,7 @@ function HomePage() {
 
       <IntroHero
         videoSrc={introVideoUrl}
+        posterSrc={finalLogoUrl}
         introDone={introDone}
         onIntroEnded={() => setIntroDone(true)}
         onLeadReveal={() => {
