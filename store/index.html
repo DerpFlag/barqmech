@@ -15,7 +15,20 @@
     <title>BarqMech — Store</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Replaced on first React paint. If this stays visible, the JS bundle did not run (404, cache, or runtime error). -->
+      <p
+        style="
+          margin: 0;
+          padding: 2rem;
+          color: #94a3b8;
+          font-family: system-ui, sans-serif;
+          text-align: center;
+        "
+      >
+        Loading…
+      </p>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
