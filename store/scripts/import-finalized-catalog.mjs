@@ -1,5 +1,5 @@
 /**
- * One-shot catalog import: Media/Finalized/prices_summary.csv + product folder images + row DXF files → Supabase.
+ * One-shot catalog import: Media/Finalized/prices_summary.csv + product folder images (all jpg/png/…) + row DXF files → Supabase.
  *
  * Requires (environment variables — use store/.env.import.local, never commit secrets):
  *   SUPABASE_URL
@@ -86,10 +86,10 @@ function slugForProduct(category, folderTitle) {
 }
 
 /**
- * First image alphabetically by **basename** among raster files in this folder
- * and nested subfolders (limited depth — some Panel products keep previews in a subfolder).
+ * All raster images under the product folder (and shallow subfolders), sorted alphabetically by basename
+ * (same order as the former "first image" pick, so the primary hero stays first).
  */
-function firstImagePath(productDir, maxDepth = 4) {
+function allImagePaths(productDir, maxDepth = 4) {
   const found = []
   function walk(dir, depth) {
     if (depth > maxDepth) return
@@ -109,11 +109,11 @@ function firstImagePath(productDir, maxDepth = 4) {
     }
   }
   walk(productDir, 0)
-  if (!found.length) return null
+  if (!found.length) return []
   found.sort((a, b) =>
     basename(a).localeCompare(basename(b), 'en', { sensitivity: 'base', numeric: true })
   )
-  return found[0]
+  return found
 }
 
 function intOrZero(v) {
@@ -236,14 +236,24 @@ async function main() {
   console.log(`Products: ${products.size} (dry-run=${dryRun})`)
 
   for (const p of products.values()) {
-    const imgPath = firstImagePath(p.folder)
-    if (!imgPath) {
+    const imagePaths = allImagePaths(p.folder)
+    if (!imagePaths.length) {
       console.warn(`No image in ${p.folder} — skipping product ${p.slug}`)
       continue
     }
 
-    const ext = extname(imgPath).toLowerCase() || '.jpg'
-    const storagePath = `${p.slug}/hero${ext}`
+    const rel = relative(finalizedRoot, p.folder).replace(/\\/g, '/')
+
+    if (dryRun) {
+      const names = imagePaths.map((fp) => basename(fp)).join(', ')
+      console.log(
+        `[dry-run] ${p.slug} | ${p.title} | variants=${[...p.variants.keys()].sort((a, b) => a - b).join(',')} | images(${imagePaths.length})=${names} | ${rel}`
+      )
+      continue
+    }
+
+    if (!supabase) continue
+
     const mimeByExt = {
       '.png': 'image/png',
       '.webp': 'image/webp',
@@ -253,29 +263,32 @@ async function main() {
       '.tiff': 'image/tiff',
       '.jfif': 'image/jpeg',
     }
-    const mime = mimeByExt[ext] ?? 'image/jpeg'
 
-    const fileBuf = readFileSync(imgPath)
-    const rel = relative(finalizedRoot, p.folder).replace(/\\/g, '/')
+    const publicUrls = []
+    for (let i = 0; i < imagePaths.length; i++) {
+      const imgPath = imagePaths[i]
+      const ext = extname(imgPath).toLowerCase() || '.jpg'
+      const storagePath = `${p.slug}/preview-${i}${ext}`
+      const mime = mimeByExt[ext] ?? 'image/jpeg'
+      const fileBuf = readFileSync(imgPath)
 
-    if (dryRun) {
-      console.log(`[dry-run] ${p.slug} | ${p.title} | variants=${[...p.variants.keys()].sort((a, b) => a - b).join(',')} | image=${basename(imgPath)} | ${rel}`)
-      continue
+      const { error: upErr } = await supabase.storage.from('product-images').upload(storagePath, fileBuf, {
+        contentType: mime,
+        upsert: true,
+      })
+      if (upErr) {
+        console.error(`Storage upload failed ${p.slug} ${storagePath}:`, upErr.message)
+        publicUrls.length = 0
+        break
+      }
+      const { data: pub } = supabase.storage.from('product-images').getPublicUrl(storagePath)
+      if (pub?.publicUrl) publicUrls.push(pub.publicUrl)
     }
 
-    if (!supabase) continue
-
-    const { error: upErr } = await supabase.storage.from('product-images').upload(storagePath, fileBuf, {
-      contentType: mime,
-      upsert: true,
-    })
-    if (upErr) {
-      console.error(`Storage upload failed ${p.slug}:`, upErr.message)
+    if (!publicUrls.length) {
+      console.error(`No images uploaded for ${p.slug} — skipping DB upsert`)
       continue
     }
-
-    const { data: pub } = supabase.storage.from('product-images').getPublicUrl(storagePath)
-    const publicUrl = pub?.publicUrl || ''
 
     const { data: upsertedRows, error: prodErr } = await supabase
       .from('catalog_products')
@@ -284,7 +297,7 @@ async function main() {
           slug: p.slug,
           category: p.category,
           title: p.title,
-          image_urls: publicUrl ? [publicUrl] : [],
+          image_urls: publicUrls,
         },
         { onConflict: 'slug' }
       )
