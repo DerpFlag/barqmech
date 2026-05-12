@@ -132,6 +132,11 @@ export function IntroHero({
     return () => document.body.classList.remove('intro-playing')
   }, [introDone, playbackRate])
 
+  /**
+   * HF (`HF/app/src/App.tsx`) keeps one continuous `requestAnimationFrame` loop: each frame either
+   * paints the video (when decoded) or a static hold. No switching anim pipelines on play/pause —
+   * that avoids blink/jank. We keep BarqMech layout (no blur gutters) and separate buffer-then-play logic above.
+   */
   useEffect(() => {
     if (introDone) return
 
@@ -140,14 +145,11 @@ export function IntroHero({
     const hero = heroRef.current
     if (!video || !canvas || !hero) return
 
-    const ctx =
-      canvas.getContext('2d', { alpha: false, desynchronized: true }) ?? canvas.getContext('2d', { alpha: false })
+    const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) return
 
     let cancelled = false
     let rafId = 0
-    let rvfcId = 0
-    let resizeDebounce = 0
     let canvasWidth = 0
     let canvasHeight = 0
     let dpr = 1
@@ -189,161 +191,41 @@ export function IntroHero({
       hero.style.setProperty('--panel-right-center', `${rightCenterPct}%`)
     }
 
-    /** Cheap: first frame / paused hold — no blur passes, no rAF loop. */
-    const paintFrozen = () => {
+    const drawFrame = () => {
       if (cancelled || introDoneRef.current) return
-      ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+
       const videoReady = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0
-      if (!videoReady) {
+      if (videoReady) {
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+        ctx.fillStyle = '#000000'
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+        ctx.imageSmoothingEnabled = true
+        const sw = video.videoWidth
+        const sh = video.videoHeight
+        const { x, y, drawW, drawH } = layoutFrame(sw, sh)
+        setPanelCenters(x)
+        ctx.drawImage(video, 0, 0, sw, sh, x, y, drawW, drawH)
+      } else {
         ctx.fillStyle = '#0a0a0e'
         ctx.fillRect(0, 0, canvasWidth, canvasHeight)
-        return
       }
-      ctx.fillStyle = '#000000'
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight)
-      ctx.imageSmoothingEnabled = true
-      const sw = video.videoWidth
-      const sh = video.videoHeight
-      const { x, y, drawW, drawH } = layoutFrame(sw, sh)
-      setPanelCenters(x)
-      ctx.drawImage(video, 0, 0, sw, sh, x, y, drawW, drawH)
+
+      rafId = window.requestAnimationFrame(drawFrame)
     }
-
-    /** Heavy: only while video is playing (blur gutters + seams). */
-    const paintPlayingDecorated = () => {
-      if (cancelled || introDoneRef.current) return
-      const sw = video.videoWidth
-      const sh = video.videoHeight
-      if (sw <= 0 || sh <= 0) return
-
-      const { x, y, drawW, drawH } = layoutFrame(sw, sh)
-      setPanelCenters(x)
-
-      ctx.clearRect(0, 0, canvasWidth, canvasHeight)
-      ctx.imageSmoothingEnabled = true
-
-      const blur = Math.max(Math.floor(18 * dpr), 1)
-      const pad = Math.max(Math.floor(48 * dpr), 1)
-      const strip = 24
-
-      ctx.save()
-      ctx.filter = `blur(${Math.max(blur + 8, 24)}px)`
-      if (x > 0) {
-        ctx.drawImage(video, 0, 0, strip, sh, -pad, 0, x + pad * 2, canvasHeight)
-        ctx.drawImage(video, sw - strip, 0, strip, sh, canvasWidth - x - pad, 0, x + pad * 2, canvasHeight)
-      }
-      if (y > 0) {
-        ctx.drawImage(video, 0, 0, sw, strip, 0, -pad, canvasWidth, y + pad * 2)
-        ctx.drawImage(video, 0, sh - strip, sw, strip, 0, canvasHeight - y - pad, canvasWidth, y + pad * 2)
-      }
-      ctx.restore()
-
-      ctx.drawImage(video, 0, 0, sw, sh, x, y, drawW, drawH)
-
-      if (x > 0) {
-        const seamW = Math.max(Math.floor(150 * dpr), 1)
-        ctx.save()
-        ctx.globalAlpha = 0.82
-        ctx.filter = `blur(${Math.max(Math.floor(20 * dpr), 10)}px)`
-        ctx.drawImage(video, 0, 0, strip, sh, x - seamW, y, seamW * 2, drawH)
-        ctx.drawImage(video, sw - strip, 0, strip, sh, canvasWidth - x - seamW, y, seamW * 2, drawH)
-        ctx.restore()
-      }
-    }
-
-    const vWithRvfc = video as HTMLVideoElement & {
-      requestVideoFrameCallback?: (cb: VideoFrameRequestCallback) => number
-      cancelVideoFrameCallback?: (handle: number) => void
-    }
-
-    const stopAnim = () => {
-      if (rafId) {
-        window.cancelAnimationFrame(rafId)
-        rafId = 0
-      }
-      if (rvfcId && typeof vWithRvfc.cancelVideoFrameCallback === 'function') {
-        vWithRvfc.cancelVideoFrameCallback(rvfcId)
-        rvfcId = 0
-      }
-    }
-
-    const schedulePlaying = () => {
-      if (cancelled || introDoneRef.current) return
-      if (video.paused || video.ended) return
-
-      const videoReady = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0
-      if (!videoReady) return
-
-      paintPlayingDecorated()
-
-      const playing = !video.paused && !video.ended
-      if (!playing) return
-
-      const useRvfc =
-        typeof vWithRvfc.requestVideoFrameCallback === 'function' &&
-        video.readyState >= 2 &&
-        video.videoWidth > 0 &&
-        video.videoHeight > 0
-
-      if (useRvfc) {
-        const id = vWithRvfc.requestVideoFrameCallback!(() => {
-          rvfcId = 0
-          schedulePlaying()
-        })
-        rvfcId = typeof id === 'number' ? id : 0
-      } else {
-        rafId = window.requestAnimationFrame(() => {
-          rafId = 0
-          schedulePlaying()
-        })
-      }
-    }
-
-    const onLoadedOrSeeked = () => {
-      if (video.paused && !introDoneRef.current) paintFrozen()
-    }
-
-    const onPlaying = () => {
-      stopAnim()
-      schedulePlaying()
-    }
-
-    const onPause = () => {
-      stopAnim()
-      if (!introDoneRef.current) paintFrozen()
-    }
-
-    video.addEventListener('loadeddata', onLoadedOrSeeked)
-    video.addEventListener('seeked', onLoadedOrSeeked)
-    video.addEventListener('playing', onPlaying)
-    video.addEventListener('pause', onPause)
 
     resizeCanvas()
-    paintFrozen()
+    rafId = window.requestAnimationFrame(drawFrame)
 
     const resizeObserver = new ResizeObserver(() => {
-      if (introDoneRef.current || cancelled) return
-      window.clearTimeout(resizeDebounce)
-      resizeDebounce = window.setTimeout(() => {
-        resizeCanvas()
-        if (video.paused || video.ended) paintFrozen()
-        else {
-          stopAnim()
-          schedulePlaying()
-        }
-      }, 100)
+      if (introDoneRef.current) return
+      resizeCanvas()
     })
     resizeObserver.observe(hero)
 
     return () => {
       cancelled = true
-      stopAnim()
-      window.clearTimeout(resizeDebounce)
+      window.cancelAnimationFrame(rafId)
       resizeObserver.disconnect()
-      video.removeEventListener('loadeddata', onLoadedOrSeeked)
-      video.removeEventListener('seeked', onLoadedOrSeeked)
-      video.removeEventListener('playing', onPlaying)
-      video.removeEventListener('pause', onPause)
     }
   }, [introDone])
 
