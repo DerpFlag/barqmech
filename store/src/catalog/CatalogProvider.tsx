@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { getSupabaseBrowserClient, isSupabaseCatalogConfigured } from '../lib/supabaseClient.ts'
 import type { CatalogProduct, CatalogVariantRow } from './types.ts'
+import { fetchAllCatalogVariants } from './fetchCatalogVariants.ts'
 import { minListPricePkr } from './pricing.ts'
 import { formatPriceNoDecimals, type FeaturedCategory } from '../data/catalog.ts'
 
@@ -139,12 +140,8 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
       const ids = productsRaw.map((p) => p.id)
       const variantsByProduct = new Map<string, RawVariant[]>()
       if (ids.length) {
-        const { data: varRows, error: vErr } = await supabase
-          .from('catalog_variants')
-          .select('id, product_id, design_code, sort_order, pricing')
-          .in('product_id', ids)
-        if (vErr) throw vErr
-        for (const v of (varRows ?? []) as RawVariant[]) {
+        const varRows = await fetchAllCatalogVariants(supabase, ids)
+        for (const v of varRows as RawVariant[]) {
           const list = variantsByProduct.get(v.product_id) ?? []
           list.push(v)
           variantsByProduct.set(v.product_id, list)

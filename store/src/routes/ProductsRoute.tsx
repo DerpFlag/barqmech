@@ -8,6 +8,7 @@ import {
   parsePrice,
   slugToCategory,
 } from '../data/catalog.ts'
+import { CatalogImage } from '../catalog/CatalogImage.tsx'
 import { useCatalog } from '../catalog/CatalogProvider.tsx'
 import { TopbarCartButton } from '../cart/CartContext.tsx'
 import { OrderDesignContactFooter, useShopContactDemo } from '../components/shopContact.tsx'
@@ -210,24 +211,28 @@ export default function ProductsPage() {
             ) : (
               <>
                 <div className="shop-route-grid products-grid">
-                  {pagedProducts.map((item) => (
+                  {pagedProducts.map((item) => {
+                    const imageIndex = productImageIndexes[item.id] ?? 0
+                    const cardImage = item.images[imageIndex] ?? item.images[0]
+                    if (!cardImage) return null
+                    return (
                     <Link key={item.id} to={`/products/${categorySlugs[item.category]}/${item.slug}`} className="shop-route-card">
                       <div className="shop-route-image-stack">
-                        {item.images.map((image, imageIndex) => (
-                          <img
-                            key={`${item.id}-${image}`}
-                            src={image}
-                            alt={item.title}
-                            className={`shop-route-image ${imageIndex === (productImageIndexes[item.id] ?? 0) ? 'active' : ''}`}
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        ))}
+                        <CatalogImage
+                          key={`${item.id}-${imageIndex}`}
+                          publicUrl={cardImage}
+                          size="card"
+                          alt={item.title}
+                          className="shop-route-image active"
+                          loading="lazy"
+                          decoding="async"
+                        />
                       </div>
                       <h3>{item.title}</h3>
                       <p>{item.price}</p>
                     </Link>
-                  ))}
+                    )
+                  })}
                 </div>
                 <div className="products-pagination">
                   <button type="button" className="featured-arrow" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>

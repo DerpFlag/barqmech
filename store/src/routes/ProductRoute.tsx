@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { TopbarCartButton, useCart } from '../cart/CartContext.tsx'
+import { CatalogImage } from '../catalog/CatalogImage.tsx'
 import { useCatalog } from '../catalog/CatalogProvider.tsx'
+import { catalogImageUrl } from '../catalog/productImages.ts'
 import {
   defaultDesignCode,
   designCodeRange,
@@ -230,7 +232,7 @@ export default function ProductPage() {
       slug: product.slug,
       categorySlug: categorySlug!,
       title: product.title,
-      imageUrl: heroSrc,
+      imageUrl: catalogImageUrl(heroSrc, 'card'),
       priceLabel: formatPriceNoDecimals(unit),
       unitPrice: unit,
       quantity,
@@ -333,7 +335,7 @@ export default function ProductPage() {
                       onClick={() => setActiveImageIndex(index)}
                     >
                       <span className="product-detail-thumb-frame">
-                        <img src={src} alt="" loading="lazy" decoding="async" />
+                        <CatalogImage publicUrl={src} size="thumb" alt="" loading="lazy" decoding="async" />
                       </span>
                     </button>
                   ))}
@@ -347,29 +349,15 @@ export default function ProductPage() {
                 aria-label="Main product images. Use arrow keys to change image."
               >
                 <div className="product-detail-hero-viewport">
-                  <div
-                    className="product-detail-hero-track"
-                    style={{
-                      width: `${nImages * 100}%`,
-                      transform: `translateX(-${(activeImageIndex * 100) / nImages}%)`,
-                    }}
-                  >
-                    {images.map((src, index) => (
-                      <div
-                        key={`${product.id}-hero-${index}`}
-                        className="product-detail-hero-slide"
-                        style={{ width: `${100 / nImages}%` }}
-                        aria-hidden={index !== activeImageIndex}
-                      >
-                        <img
-                          src={src}
-                          alt={index === 0 ? product.title : ''}
-                          loading={index === 0 ? 'eager' : 'lazy'}
-                          decoding="async"
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  <CatalogImage
+                    key={`${product.id}-hero-${activeImageIndex}`}
+                    publicUrl={heroSrc}
+                    size="hero"
+                    alt={product.title}
+                    loading="eager"
+                    decoding="async"
+                    className="product-detail-hero-img"
+                  />
                 </div>
                 <div className="product-detail-hero-overlay">
                   {showThumbs ? (
@@ -887,7 +875,7 @@ export default function ProductPage() {
             </>
           ) : null}
           <div className="product-detail-lightbox-stage" onClick={(e) => e.stopPropagation()}>
-            <img src={heroSrc} alt={product.title} decoding="async" fetchPriority="high" />
+            <CatalogImage publicUrl={heroSrc} size="zoom" alt={product.title} decoding="async" fetchPriority="high" />
           </div>
         </div>
       ) : null}
