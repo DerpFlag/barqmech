@@ -4,6 +4,16 @@ Chronological notes for agents and humans. Append new entries at the **top**.
 
 ---
 
+## 2026-05-15 — Embedded catalog_variants + remove vite define override
+
+**Problem:** Vercel env correct but prices/sizes still missing after pagination fix.
+
+**Root cause:** `vite.config.ts` `define: { 'import.meta.env.VITE_*': … }` can bake empty strings at build time and override real Vercel env. Separate paginated `catalog_variants` fetch was also fragile in browsers.
+
+**Fix:** Removed `define` block; backfill `process.env.VITE_*` from `SUPABASE_*` only when unset. Load products with nested `catalog_variants (...)` in one PostgREST query (~346 products, ~2350 variants). PDP shows list price fallback when tier price is 0.
+
+---
+
 ## 2026-05-15 — Local catalog env + variant fetch (prices still missing)
 
 **Problem:** Prices/sizes still empty locally after pagination fix.

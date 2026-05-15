@@ -10,37 +10,43 @@ const analyze = process.env.ANALYZE === '1' || process.env.ANALYZE === 'true'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, rootDir, '')
-  const supabaseUrl = (env.VITE_SUPABASE_URL || env.SUPABASE_URL || '').trim()
-  const supabaseAnon = (env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY || '').trim()
+  const fileEnv = loadEnv(mode, rootDir, '')
+  // Local .env.local often uses SUPABASE_* for API scripts — backfill VITE_* for the browser build.
+  // Never override Vercel/GitHub env: those already set VITE_SUPABASE_* on process.env.
+  if (!process.env.VITE_SUPABASE_URL?.trim()) {
+    process.env.VITE_SUPABASE_URL = (fileEnv.VITE_SUPABASE_URL || fileEnv.SUPABASE_URL || '').trim()
+  }
+  if (!process.env.VITE_SUPABASE_ANON_KEY?.trim()) {
+    process.env.VITE_SUPABASE_ANON_KEY = (
+      fileEnv.VITE_SUPABASE_ANON_KEY ||
+      fileEnv.SUPABASE_ANON_KEY ||
+      ''
+    ).trim()
+  }
 
   return {
-  define: {
-    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
-    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnon),
-  },
-  plugins: [
-    react(),
-    ...(analyze
-      ? [
-          visualizer({
-            filename: 'dist/stats.html',
-            gzipSize: true,
-            brotliSize: true,
-            open: false,
-            template: 'treemap',
-          }),
-        ]
-      : []),
-  ],
-  server: {
-    fs: {
-      allow: [path.resolve(rootDir, '..')],
+    plugins: [
+      react(),
+      ...(analyze
+        ? [
+            visualizer({
+              filename: 'dist/stats.html',
+              gzipSize: true,
+              brotliSize: true,
+              open: false,
+              template: 'treemap',
+            }),
+          ]
+        : []),
+    ],
+    server: {
+      fs: {
+        allow: [path.resolve(rootDir, '..')],
+      },
+      /** Forward `/api/*` to `vercel dev` (default port 3000) while using `npm run dev`. */
+      proxy: {
+        '/api': { target: 'http://127.0.0.1:3000', changeOrigin: true },
+      },
     },
-    /** Forward `/api/*` to `vercel dev` (default port 3000) while using `npm run dev`. */
-    proxy: {
-      '/api': { target: 'http://127.0.0.1:3000', changeOrigin: true },
-    },
-  },
-}
+  }
 })

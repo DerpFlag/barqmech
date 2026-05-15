@@ -17,6 +17,7 @@ import {
   finalLogoUrl,
   formatEstimatedDeliveryRange,
   formatPriceNoDecimals,
+  parsePrice,
   slugToCategory,
   storefrontPhoneTel,
   storefrontWhatsApp,
@@ -180,8 +181,10 @@ export default function ProductPage() {
   if (!product) return <Navigate to={categorySlug ? `/products?category=${categorySlug}` : '/products'} replace />
 
   const productsCategoryHref = `/products?category=${categorySlug}`
-  const lineTotal = unitPriceWithAddons * quantity
-  const lineTotalLabel = lineTotal > 0 ? formatPriceNoDecimals(lineTotal) : formatPriceNoDecimals(unitPriceWithAddons)
+  const listPricePkr = parsePrice(product.price)
+  const displayUnitPrice = unitPriceWithAddons > 0 ? unitPriceWithAddons : listPricePkr
+  const lineTotal = displayUnitPrice * quantity
+  const lineTotalLabel = lineTotal > 0 ? formatPriceNoDecimals(lineTotal) : formatPriceNoDecimals(displayUnitPrice)
 
   const deliveryRange = formatEstimatedDeliveryRange()
 
@@ -463,6 +466,11 @@ export default function ProductPage() {
               <div className="product-detail-field">
                 <span className="product-detail-label">Size</span>
                 <span className="product-detail-label-meta">{selectedSize || '—'}</span>
+                {sizeLabels.length === 0 ? (
+                  <p className="product-detail-design-error" role="status">
+                    Sizes and prices could not be loaded. Hard refresh the page; if this persists, contact us for a quote.
+                  </p>
+                ) : null}
                 <div className="product-detail-pills" role="group" aria-label="Size">
                   {sizeLabels.map((s) => (
                     <button
@@ -595,8 +603,8 @@ export default function ProductPage() {
               </div>
 
               <p className="product-detail-price">
-                {formatPriceNoDecimals(unitPriceWithAddons)}
-                {quantity > 1 && unitPriceWithAddons > 0 ? (
+                {formatPriceNoDecimals(displayUnitPrice)}
+                {quantity > 1 && displayUnitPrice > 0 ? (
                   <span className="product-detail-price-sub"> · {quantity} × subtotal {lineTotalLabel}</span>
                 ) : null}
               </p>

@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { getSupabaseBrowserClient, isSupabaseCatalogConfigured } from '../lib/supabaseClient.ts'
 import type { CatalogProduct } from './types.ts'
-import { fetchAllCatalogVariants, normalizeVariantPricing } from './fetchCatalogVariants.ts'
+import { normalizeVariantPricing } from './fetchCatalogVariants.ts'
 import { minListPricePkr } from './pricing.ts'
 import { formatPriceNoDecimals, type FeaturedCategory } from '../data/catalog.ts'
 
@@ -105,6 +105,21 @@ export function useCatalogProducts(): CatalogProduct[] {
   return products
 }
 
+const PRODUCT_SELECT = `
+  id,
+  slug,
+  category,
+  title,
+  image_urls,
+  catalog_variants (
+    id,
+    product_id,
+    design_code,
+    sort_order,
+    pricing
+  )
+`
+
 export function CatalogProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [loading, setLoading] = useState(isSupabaseCatalogConfigured)
@@ -127,34 +142,25 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
       const supabase = getSupabaseBrowserClient()
       const { data: prodRows, error: pErr } = await supabase
         .from('catalog_products')
-        .select('id, slug, category, title, image_urls')
+        .select(PRODUCT_SELECT)
         .order('title', { ascending: true })
       if (pErr) throw pErr
-      const productsRaw = (prodRows ?? []) as Omit<RawProduct, 'catalog_variants'>[]
-      const ids = productsRaw.map((p) => p.id)
-      const variantsByProduct = new Map<string, RawVariant[]>()
-      if (ids.length) {
-        const varRows = await fetchAllCatalogVariants(supabase, ids)
-        for (const v of varRows) {
-          const list = variantsByProduct.get(v.product_id) ?? []
-          list.push(v as RawVariant)
-          variantsByProduct.set(v.product_id, list)
-        }
-        if (import.meta.env.DEV) {
-          const missing = ids.filter((id) => !(variantsByProduct.get(id)?.length ?? 0))
-          if (missing.length) {
-            console.warn(
-              `[catalog] ${missing.length} product(s) have no variants in Supabase — prices/sizes will be empty.`,
-              missing.length <= 5 ? missing : `${missing.slice(0, 3).join(', ')}…`
-            )
-          }
-        }
-      }
-      const rows: RawProduct[] = productsRaw.map((p) => ({
-        ...p,
-        catalog_variants: variantsByProduct.get(p.id) ?? [],
-      }))
+
+      const rows = (prodRows ?? []) as RawProduct[]
       const mapped = rows.map(mapProduct).filter((p): p is CatalogProduct => p != null)
+
+      if (import.meta.env.DEV) {
+        const noVariants = mapped.filter((p) => p.variants.length === 0)
+        if (noVariants.length) {
+          console.warn(
+            `[catalog] ${noVariants.length} product(s) have no variants — prices/sizes empty.`,
+            noVariants.slice(0, 5).map((p) => p.slug)
+          )
+        }
+        const totalVariants = mapped.reduce((n, p) => n + p.variants.length, 0)
+        console.info(`[catalog] loaded ${mapped.length} products, ${totalVariants} variants`)
+      }
+
       startTransition(() => {
         setProducts(mapped)
       })
