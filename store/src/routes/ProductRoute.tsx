@@ -4,6 +4,9 @@ import { TopbarCartButton, useCart } from '../cart/CartContext.tsx'
 import { CatalogImage } from '../catalog/CatalogImage.tsx'
 import { CatalogPricingAlert } from '../catalog/CatalogPricingAlert.tsx'
 import { useCatalog } from '../catalog/CatalogProvider.tsx'
+import { loadVariantsForProductId, mergeVariantsIntoProduct } from '../catalog/loadCatalog.ts'
+import { getSupabaseBrowserClient, isSupabaseCatalogConfigured } from '../lib/supabaseClient.ts'
+import type { CatalogProduct } from '../catalog/types.ts'
 import { catalogImageUrl } from '../catalog/productImages.ts'
 import {
   defaultDesignCode,
@@ -28,7 +31,10 @@ import { OrderDesignContactFooter, useShopContactDemo } from '../components/shop
 
 export default function ProductPage() {
   const { addToCart, openDrawer } = useCart()
-  const { products, loading: catalogLoading, error: catalogError, diagnostics, refetch } = useCatalog()
+  const { products, loading: catalogLoading, error: catalogError, diagnostics, buildId, refetch } = useCatalog()
+  const [rescuedProduct, setRescuedProduct] = useState<CatalogProduct | null>(null)
+  const [variantRescueLoading, setVariantRescueLoading] = useState(false)
+  const [variantRescueError, setVariantRescueError] = useState<string | null>(null)
   const navigate = useNavigate()
   const { categorySlug, productSlug } = useParams()
   const [searchQuery, setSearchQuery] = useState('')
@@ -47,10 +53,56 @@ export default function ProductPage() {
   const shopContact = useShopContactDemo()
 
   const category = categorySlug ? slugToCategory[categorySlug] : undefined
-  const product = useMemo(() => {
+  const catalogProduct = useMemo(() => {
     if (!category || !productSlug) return undefined
     return products.find((p) => p.category === category && p.slug === productSlug)
   }, [products, category, productSlug])
+
+  const product = rescuedProduct ?? catalogProduct
+
+  useEffect(() => {
+    setRescuedProduct(null)
+    setVariantRescueError(null)
+  }, [catalogProduct?.id])
+
+  useEffect(() => {
+    if (catalogLoading || !catalogProduct?.id || catalogProduct.variants.length > 0) {
+      setVariantRescueLoading(false)
+      return
+    }
+    if (!isSupabaseCatalogConfigured) return
+
+    let cancelled = false
+    setVariantRescueLoading(true)
+    setVariantRescueError(null)
+
+    void (async () => {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        const { variants, error } = await loadVariantsForProductId(supabase, catalogProduct.id)
+        if (cancelled) return
+        if (error) {
+          setVariantRescueError(error)
+          return
+        }
+        if (variants.length) {
+          setRescuedProduct(mergeVariantsIntoProduct(catalogProduct, variants))
+        } else {
+          setVariantRescueError('No variant rows returned for this product in Supabase.')
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setVariantRescueError(e instanceof Error ? e.message : 'Failed to load variant pricing')
+        }
+      } finally {
+        if (!cancelled) setVariantRescueLoading(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [catalogLoading, catalogProduct, catalogProduct?.id, catalogProduct?.variants.length])
 
   const dcRange = useMemo(() => (product ? designCodeRange(product.variants) : null), [product])
 
@@ -431,7 +483,13 @@ export default function ProductPage() {
                 catalogError={catalogError}
                 catalogLoading={catalogLoading}
                 diagnostics={diagnostics}
-                onRetry={refetch}
+                buildId={buildId}
+                variantRescueError={variantRescueError}
+                variantRescueLoading={variantRescueLoading}
+                onRetry={() => {
+                  setRescuedProduct(null)
+                  refetch()
+                }}
               />
 
               {dcRange ? (

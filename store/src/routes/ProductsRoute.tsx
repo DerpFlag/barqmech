@@ -16,7 +16,7 @@ import { OrderDesignContactFooter, useShopContactDemo } from '../components/shop
 
 
 export default function ProductsPage() {
-  const { products, loading: catalogLoading, error: catalogError, diagnostics, refetch } = useCatalog()
+  const { products, loading: catalogLoading, error: catalogError, diagnostics, buildId, refetch } = useCatalog()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [searchQuery, setSearchQuery] = useState('')
@@ -205,6 +205,7 @@ export default function ProductsPage() {
               catalogError={catalogError}
               catalogLoading={catalogLoading}
               diagnostics={diagnostics}
+              buildId={buildId}
               onRetry={refetch}
             />
             {catalogLoading ? (

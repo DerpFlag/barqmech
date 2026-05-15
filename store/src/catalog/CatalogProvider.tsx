@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { getSupabaseBrowserClient, isSupabaseCatalogConfigured } from '../lib/supabaseClient.ts'
 import type { CatalogProduct } from './types.ts'
+import { STORE_BUILD_ID } from './buildInfo.ts'
 import { loadCatalogFromSupabase, type CatalogDiagnostics } from './loadCatalog.ts'
 
 type CatalogContextValue = {
@@ -17,15 +18,15 @@ type CatalogContextValue = {
   loading: boolean
   error: string | null
   diagnostics: CatalogDiagnostics | null
+  buildId: string
   refetch: () => void
 }
 
 const CatalogContext = createContext<CatalogContextValue | null>(null)
 
-/** Products only — avoids re-rendering home when `loading` flips (same catalog data). */
 const CatalogProductsContext = createContext<CatalogProduct[] | null>(null)
 
-const emptyDiagnostics: CatalogDiagnostics = {
+const emptyDiagnostics = (): CatalogDiagnostics => ({
   configured: false,
   loadedAt: null,
   productCount: 0,
@@ -33,10 +34,11 @@ const emptyDiagnostics: CatalogDiagnostics = {
   productsWithoutVariants: 0,
   productsWithoutPricing: 0,
   loadMethod: 'none',
-  embedError: null,
-  fallbackError: null,
+  productsError: null,
+  variantsError: null,
   warning: null,
-}
+  buildId: STORE_BUILD_ID,
+})
 
 export function useCatalog() {
   const ctx = useContext(CatalogContext)
@@ -63,7 +65,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
         setLoading(false)
         setError('Catalog not configured (set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY).')
         setDiagnostics({
-          ...emptyDiagnostics,
+          ...emptyDiagnostics(),
           warning: 'Supabase URL or anon key missing in this build.',
         })
       })
@@ -75,7 +77,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
     })
     try {
       const supabase = getSupabaseBrowserClient()
-      const result = await loadCatalogFromSupabase(supabase)
+      const result = await loadCatalogFromSupabase(supabase, STORE_BUILD_ID)
       startTransition(() => {
         setProducts(result.products)
         setDiagnostics(result.diagnostics)
@@ -92,7 +94,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
         setError(message)
         setProducts([])
         setDiagnostics({
-          ...emptyDiagnostics,
+          ...emptyDiagnostics(),
           configured: true,
           loadedAt: new Date().toISOString(),
           warning: message,
@@ -115,6 +117,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       diagnostics,
+      buildId: STORE_BUILD_ID,
       refetch: () => {
         void load()
       },

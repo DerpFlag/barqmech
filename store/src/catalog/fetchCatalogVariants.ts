@@ -48,15 +48,8 @@ export function normalizeVariantPricing(raw: unknown): { sizes: CatalogSizeTier[
   return { sizes }
 }
 
-/**
- * Load all catalog_variants with pagination (PostgREST max 1000 rows/request).
- * Avoids `.in(product_id, …)` with 300+ UUIDs — that URL can fail in browsers/CDNs.
- */
-export async function fetchAllCatalogVariants(
-  supabase: SupabaseClient,
-  productIds?: string[]
-): Promise<CatalogVariantSelect[]> {
-  const filter = productIds?.length ? new Set(productIds) : null
+/** Paginate through all variant rows (PostgREST max 1000 per request). */
+export async function fetchAllCatalogVariants(supabase: SupabaseClient): Promise<CatalogVariantSelect[]> {
   const all: CatalogVariantSelect[] = []
   let from = 0
 
@@ -70,16 +63,24 @@ export async function fetchAllCatalogVariants(
 
     if (error) throw error
     const batch = (data ?? []) as CatalogVariantSelect[]
-    if (filter) {
-      for (const row of batch) {
-        if (filter.has(row.product_id)) all.push(row)
-      }
-    } else {
-      all.push(...batch)
-    }
+    all.push(...batch)
     if (batch.length < PAGE_SIZE) break
     from += PAGE_SIZE
   }
 
   return all
+}
+
+export async function fetchVariantsForProduct(
+  supabase: SupabaseClient,
+  productId: string
+): Promise<CatalogVariantSelect[]> {
+  const { data, error } = await supabase
+    .from('catalog_variants')
+    .select('id, product_id, design_code, sort_order, pricing')
+    .eq('product_id', productId)
+    .order('design_code', { ascending: true })
+
+  if (error) throw error
+  return (data ?? []) as CatalogVariantSelect[]
 }

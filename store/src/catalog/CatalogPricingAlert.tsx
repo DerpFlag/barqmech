@@ -6,11 +6,23 @@ type Props = {
   catalogError: string | null
   catalogLoading: boolean
   diagnostics: CatalogDiagnostics | null
+  buildId?: string
+  variantRescueError?: string | null
+  variantRescueLoading?: boolean
   onRetry?: () => void
 }
 
-export function CatalogPricingAlert({ product, catalogError, catalogLoading, diagnostics, onRetry }: Props) {
-  if (catalogLoading) return null
+export function CatalogPricingAlert({
+  product,
+  catalogError,
+  catalogLoading,
+  diagnostics,
+  buildId,
+  variantRescueError,
+  variantRescueLoading,
+  onRetry,
+}: Props) {
+  if (catalogLoading && !product) return null
 
   const noVariants = product != null && product.variants.length === 0
   const noPricing =
@@ -18,38 +30,53 @@ export function CatalogPricingAlert({ product, catalogError, catalogLoading, dia
     product.variants.length > 0 &&
     product.variants.every((v) => v.pricing.sizes.length === 0)
 
-  const show = Boolean(catalogError) || noVariants || noPricing || (diagnostics?.variantCount === 0 && (diagnostics?.productCount ?? 0) > 0)
+  const globalMissing =
+    (diagnostics?.variantCount === 0 && (diagnostics?.productCount ?? 0) > 0) ||
+    Boolean(catalogError)
 
-  if (!show) return null
+  const show =
+    Boolean(catalogError) ||
+    noVariants ||
+    noPricing ||
+    globalMissing ||
+    Boolean(variantRescueError)
+
+  if (!show && !variantRescueLoading) return null
 
   const title = catalogError
     ? 'Catalog could not load'
-    : noVariants
-      ? 'Sizes and prices not available'
-      : 'Pricing data incomplete'
+    : variantRescueLoading
+      ? 'Loading prices…'
+      : noVariants
+        ? 'Sizes and prices not available'
+        : 'Pricing data incomplete'
 
   const detail =
     catalogError ??
+    variantRescueError ??
     diagnostics?.warning ??
     (noVariants
-      ? 'This product has no variant rows in the database, or the storefront failed to load them.'
+      ? 'Variant pricing did not load. Try Retry below, or hard refresh (Ctrl+Shift+R). If Build ID looks old, wait for deploy.'
       : 'Variant rows exist but contain no size labels or PKR amounts.')
+
+  const displayBuild = buildId ?? diagnostics?.buildId ?? 'unknown'
 
   return (
     <div className="catalog-pricing-alert" role="alert">
       <p className="catalog-pricing-alert-title">{title}</p>
       <p className="catalog-pricing-alert-detail">{detail}</p>
-      {diagnostics ? (
-        <ul className="catalog-pricing-alert-meta">
-          <li>Products: {diagnostics.productCount}</li>
-          <li>Variants loaded: {diagnostics.variantCount}</li>
-          <li>Load method: {diagnostics.loadMethod}</li>
-          {diagnostics.productsWithoutVariants > 0 ? (
-            <li>Products missing variants: {diagnostics.productsWithoutVariants}</li>
-          ) : null}
-          {product ? <li>This product slug: {product.slug}</li> : null}
-        </ul>
-      ) : null}
+      <ul className="catalog-pricing-alert-meta">
+        <li>Store build: {displayBuild}</li>
+        {diagnostics ? (
+          <>
+            <li>Products: {diagnostics.productCount}</li>
+            <li>Variants loaded: {diagnostics.variantCount}</li>
+            <li>Load method: {diagnostics.loadMethod}</li>
+          </>
+        ) : null}
+        {product ? <li>This product: {product.slug}</li> : null}
+        {product ? <li>Variants on this page: {product.variants.length}</li> : null}
+      </ul>
       {onRetry ? (
         <button type="button" className="catalog-pricing-alert-retry" onClick={onRetry}>
           Retry loading catalog
