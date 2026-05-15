@@ -4,6 +4,18 @@ Chronological notes for agents and humans. Append new entries at the **top**.
 
 ---
 
+## 2026-05-15 — Local catalog env + variant fetch (prices still missing)
+
+**Problem:** Prices/sizes still empty locally after pagination fix.
+
+**Root cause:** `store/.env.local` had `SUPABASE_URL` / `SUPABASE_ANON_KEY` only. Vite does not expose those to the browser — only `VITE_*` (unless mapped). Catalog never talked to Supabase in `npm run dev`.
+
+**Fix:** `vite.config.ts` maps `SUPABASE_*` → `import.meta.env.VITE_SUPABASE_*` at build/dev time; `.env.local` also lists `VITE_` duplicates. `fetchAllCatalogVariants` no longer uses a 346-id `.in()` filter (short URLs). `normalizeVariantPricing` handles JSON string + legacy key names.
+
+**Vercel:** Ensure Production has `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (or `SUPABASE_*` — now picked up at build). Hard refresh after deploy.
+
+---
+
 ## 2026-05-15 — Catalog prices/sizes missing + slow images
 
 **Problem:** PDP showed no size pills and Rs. 0 prices for most products; gallery felt slow.

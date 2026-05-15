@@ -9,8 +9,8 @@ import {
   type ReactNode,
 } from 'react'
 import { getSupabaseBrowserClient, isSupabaseCatalogConfigured } from '../lib/supabaseClient.ts'
-import type { CatalogProduct, CatalogVariantRow } from './types.ts'
-import { fetchAllCatalogVariants } from './fetchCatalogVariants.ts'
+import type { CatalogProduct } from './types.ts'
+import { fetchAllCatalogVariants, normalizeVariantPricing } from './fetchCatalogVariants.ts'
 import { minListPricePkr } from './pricing.ts'
 import { formatPriceNoDecimals, type FeaturedCategory } from '../data/catalog.ts'
 
@@ -29,12 +29,6 @@ type RawProduct = {
   title: string
   image_urls: string[] | null
   catalog_variants: RawVariant[] | null
-}
-
-function normalizePricing(raw: unknown): CatalogVariantRow['pricing'] {
-  const p = raw as { sizes?: CatalogVariantRow['pricing']['sizes'] }
-  const sizes = Array.isArray(p?.sizes) ? p.sizes : []
-  return { sizes }
 }
 
 /** Normalize Postgres `text[]` / PostgREST quirks into a string[] of image URLs. */
@@ -70,7 +64,7 @@ function mapProduct(row: RawProduct): CatalogProduct | null {
       product_id: v.product_id,
       design_code: v.design_code,
       sort_order: v.sort_order,
-      pricing: normalizePricing(v.pricing),
+      pricing: normalizeVariantPricing(v.pricing),
     }))
     .sort((a, b) => a.design_code - b.design_code || a.sort_order - b.sort_order)
 
@@ -141,10 +135,19 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
       const variantsByProduct = new Map<string, RawVariant[]>()
       if (ids.length) {
         const varRows = await fetchAllCatalogVariants(supabase, ids)
-        for (const v of varRows as RawVariant[]) {
+        for (const v of varRows) {
           const list = variantsByProduct.get(v.product_id) ?? []
-          list.push(v)
+          list.push(v as RawVariant)
           variantsByProduct.set(v.product_id, list)
+        }
+        if (import.meta.env.DEV) {
+          const missing = ids.filter((id) => !(variantsByProduct.get(id)?.length ?? 0))
+          if (missing.length) {
+            console.warn(
+              `[catalog] ${missing.length} product(s) have no variants in Supabase — prices/sizes will be empty.`,
+              missing.length <= 5 ? missing : `${missing.slice(0, 3).join(', ')}…`
+            )
+          }
         }
       }
       const rows: RawProduct[] = productsRaw.map((p) => ({
