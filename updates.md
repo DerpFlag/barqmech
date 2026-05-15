@@ -4,6 +4,14 @@ Chronological notes for agents and humans. Append new entries at the **top**.
 
 ---
 
+## 2026-05-15 — Catalog pricing diagnostics + embed/fallback loader
+
+**From `Media/html.txt`:** PDP `[Islamic] 3 Quls Square` showed empty size pills, `Rs. 0`, old `product-detail-hero-track` (stale JS). DB has 1 variant / 3 sizes for `islamic-3-quls-square`.
+
+**Fix:** `loadCatalog.ts` — embed `catalog_variants`, paginated fallback if &lt;500 variants, normalize single-object embed. `CatalogPricingAlert` on PDP/shop with counts + Retry. `CatalogProvider` exposes `diagnostics` + `error`.
+
+---
+
 ## 2026-05-15 — Embedded catalog_variants + remove vite define override
 
 **Problem:** Vercel env correct but prices/sizes still missing after pagination fix.

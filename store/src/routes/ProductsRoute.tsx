@@ -9,13 +9,14 @@ import {
   slugToCategory,
 } from '../data/catalog.ts'
 import { CatalogImage } from '../catalog/CatalogImage.tsx'
+import { CatalogPricingAlert } from '../catalog/CatalogPricingAlert.tsx'
 import { useCatalog } from '../catalog/CatalogProvider.tsx'
 import { TopbarCartButton } from '../cart/CartContext.tsx'
 import { OrderDesignContactFooter, useShopContactDemo } from '../components/shopContact.tsx'
 
 
 export default function ProductsPage() {
-  const { products, loading: catalogLoading, error: catalogError } = useCatalog()
+  const { products, loading: catalogLoading, error: catalogError, diagnostics, refetch } = useCatalog()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [searchQuery, setSearchQuery] = useState('')
@@ -200,9 +201,15 @@ export default function ProductsPage() {
             <div className="products-listing-heading-row">
               <h2 className="products-listing-heading">{activeProductsHeading}</h2>
             </div>
+            <CatalogPricingAlert
+              catalogError={catalogError}
+              catalogLoading={catalogLoading}
+              diagnostics={diagnostics}
+              onRetry={refetch}
+            />
             {catalogLoading ? (
               <p className="checkout-lead">Loading catalog…</p>
-            ) : catalogError ? (
+            ) : catalogError && filteredProducts.length === 0 ? (
               <p className="checkout-lead" role="alert">
                 {catalogError}
               </p>

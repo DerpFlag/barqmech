@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent 
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { TopbarCartButton, useCart } from '../cart/CartContext.tsx'
 import { CatalogImage } from '../catalog/CatalogImage.tsx'
+import { CatalogPricingAlert } from '../catalog/CatalogPricingAlert.tsx'
 import { useCatalog } from '../catalog/CatalogProvider.tsx'
 import { catalogImageUrl } from '../catalog/productImages.ts'
 import {
@@ -27,7 +28,7 @@ import { OrderDesignContactFooter, useShopContactDemo } from '../components/shop
 
 export default function ProductPage() {
   const { addToCart, openDrawer } = useCart()
-  const { products, loading: catalogLoading } = useCatalog()
+  const { products, loading: catalogLoading, error: catalogError, diagnostics, refetch } = useCatalog()
   const navigate = useNavigate()
   const { categorySlug, productSlug } = useParams()
   const [searchQuery, setSearchQuery] = useState('')
@@ -425,6 +426,14 @@ export default function ProductPage() {
 
               <p className="product-detail-lead">{featuredDescriptions[product.category]}</p>
 
+              <CatalogPricingAlert
+                product={product}
+                catalogError={catalogError}
+                catalogLoading={catalogLoading}
+                diagnostics={diagnostics}
+                onRetry={refetch}
+              />
+
               {dcRange ? (
                 <div className="product-detail-field">
                   <span className="product-detail-label">Design code</span>
@@ -466,11 +475,6 @@ export default function ProductPage() {
               <div className="product-detail-field">
                 <span className="product-detail-label">Size</span>
                 <span className="product-detail-label-meta">{selectedSize || '—'}</span>
-                {sizeLabels.length === 0 ? (
-                  <p className="product-detail-design-error" role="status">
-                    Sizes and prices could not be loaded. Hard refresh the page; if this persists, contact us for a quote.
-                  </p>
-                ) : null}
                 <div className="product-detail-pills" role="group" aria-label="Size">
                   {sizeLabels.map((s) => (
                     <button

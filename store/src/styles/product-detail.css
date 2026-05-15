@@ -2701,3 +2701,49 @@
   color: var(--admin-muted);
 }
 
+.catalog-pricing-alert {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 180, 100, 0.45);
+  background: rgba(80, 40, 10, 0.35);
+  color: #ffe8c8;
+}
+
+.catalog-pricing-alert-title {
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.catalog-pricing-alert-detail {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #f5d9b8;
+}
+
+.catalog-pricing-alert-meta {
+  margin: 0 0 0.65rem;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #e8c89a;
+}
+
+.catalog-pricing-alert-retry {
+  appearance: none;
+  border: 1px solid rgba(255, 200, 120, 0.55);
+  border-radius: 8px;
+  background: rgba(255, 200, 120, 0.12);
+  color: #fff3e0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+}
+
+.catalog-pricing-alert-retry:hover {
+  background: rgba(255, 200, 120, 0.22);
+}
+
