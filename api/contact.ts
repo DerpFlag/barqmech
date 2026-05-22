@@ -1,11 +1,12 @@
 import { Resend } from 'resend'
 import { validateGmailEmail } from './lib/gmail-email.mjs'
+import { isResendTestSender, resolveStoreInbox } from './lib/resend-email-limit.mjs'
 import { escapeHtml, resolveSiteBaseUrl, emailShell } from './lib/email-brand.mjs'
 import { isPakistanMobile, telHrefFromPakistanRaw } from './lib/pakistan-phone.mjs'
 
 const resendApiKey = process.env.RESEND_API_KEY
-const resendFromEmail = process.env.RESEND_FROM_EMAIL
-const contactToEmail = process.env.CONTACT_TO_EMAIL
+const resendFromEmail = process.env.RESEND_FROM_EMAIL || process.env.ORDER_FROM_EMAIL || 'onboarding@resend.dev'
+const contactToEmail = resolveStoreInbox()
 
 const resend = resendApiKey ? new Resend(resendApiKey) : null
 
@@ -37,6 +38,7 @@ export default async function handler(req: any, res: any) {
   if (!emailValidation.ok) {
     return res.status(400).json({ error: emailValidation.reason })
   }
+  const visitorEmail = emailValidation.normalized
 
   const siteBase = resolveSiteBaseUrl(body)
   const messageHtml = escapeHtml(message).replace(/\n/g, '<br/>')
@@ -54,7 +56,7 @@ export default async function handler(req: any, res: any) {
     <p style="margin:0 0 10px;font-size:11px;letter-spacing:0.1em;color:#64748b;text-transform:uppercase;font-weight:700;">Contact details</p>
     <table role="presentation" style="margin-bottom:26px;font-size:14px;color:#334155;line-height:1.75;font-family:Arial,Helvetica,sans-serif;">
       <tr><td style="padding:4px 16px 4px 0;color:#64748b;vertical-align:top;width:100px;">Name</td><td style="padding:4px 0;">${escapeHtml(name)}</td></tr>
-      <tr><td style="padding:4px 16px 4px 0;color:#64748b;vertical-align:top;">Email</td><td style="padding:4px 0;"><a href="mailto:${escapeHtml(email)}" style="color:#1d4ed8;text-decoration:none;">${escapeHtml(email)}</a></td></tr>
+      <tr><td style="padding:4px 16px 4px 0;color:#64748b;vertical-align:top;">Email</td><td style="padding:4px 0;"><a href="mailto:${escapeHtml(visitorEmail)}" style="color:#1d4ed8;text-decoration:none;">${escapeHtml(visitorEmail)}</a></td></tr>
       <tr><td style="padding:4px 16px 4px 0;color:#64748b;vertical-align:top;">Phone</td><td style="padding:4px 0;"><a href="${escapeHtml(telHrefFromPakistanRaw(subject))}" style="color:#1d4ed8;text-decoration:none;font-weight:600;">${escapeHtml(subject)}</a></td></tr>
       ${companyRow}
     </table>
@@ -68,16 +70,26 @@ export default async function handler(req: any, res: any) {
 </tr>`
 
   try {
-    // Always notifies the store inbox (CONTACT_TO_EMAIL); the visitor's Gmail is reply-to only.
-    const sent = await resend.emails.send({
+    // Notifies the store inbox (CONTACT_TO_EMAIL / ORDER_NOTIFY_EMAIL). Visitor Gmail is in the body.
+    // Resend test sender rejects replyTo to addresses other than the account inbox.
+    const mail = {
       from: resendFromEmail,
       to: contactToEmail,
-      replyTo: email,
       subject: `[Website Contact] ${subject}`,
       html: emailShell('Website contact form', innerTd, siteBase),
-    })
+    }
+    if (!isResendTestSender(resendFromEmail)) {
+      mail.replyTo = visitorEmail
+    }
+
+    const sent = await resend.emails.send(mail)
     if (sent.error) {
-      logUpstreamError('Resend send failed', { error: sent.error })
+      logUpstreamError('Resend send failed', {
+        error: sent.error,
+        to: contactToEmail,
+        from: resendFromEmail,
+        testSender: isResendTestSender(resendFromEmail),
+      })
       return res.status(500).json({ error: 'Failed to send message. Please try again.' })
     }
 
