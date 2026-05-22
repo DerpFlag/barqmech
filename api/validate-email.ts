@@ -17,14 +17,9 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Please enter a valid email address.' })
   }
 
-  let emailValidation: { ok: boolean; reason: string; code?: number }
-  try {
-    emailValidation = await validateWithZeroBounce(email)
-  } catch (error) {
-    logUpstreamError('Unhandled exception in validateWithZeroBounce', {
-      error: error instanceof Error ? error.message : String(error),
-    })
-    return res.status(500).json({ error: 'Email validation service is unavailable. Please try again.' })
+  const emailValidation = await validateWithZeroBounce(email)
+  if (emailValidation.skipped) {
+    console.warn('[validate-email] ZeroBounce skipped:', emailValidation.skipReason)
   }
   if (!emailValidation.ok) {
     if (emailValidation.code === 429) {

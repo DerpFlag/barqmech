@@ -435,15 +435,13 @@ export default async function handler(req, res) {
     })
   }
 
-  try {
-    const zb = await validateWithZeroBounce(email)
-    if (!zb.ok) {
-      const st = zb.code === 429 ? 429 : 400
-      return sendJson(res, st, { error: zb.reason })
-    }
-  } catch (e) {
-    console.error('[place-order] ZeroBounce', e)
-    return sendJson(res, 500, { error: 'Email validation service is unavailable. Please try again.' })
+  const zb = await validateWithZeroBounce(email)
+  if (!zb.ok) {
+    const st = zb.code === 429 ? 429 : 400
+    return sendJson(res, st, { error: zb.reason })
+  }
+  if (zb.skipped) {
+    console.warn('[place-order] ZeroBounce skipped:', zb.skipReason)
   }
 
   const { subtotal, shipping, grand } = recomputeTotals(lines)
