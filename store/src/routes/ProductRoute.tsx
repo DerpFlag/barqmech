@@ -10,8 +10,10 @@ import { getSupabaseBrowserClient, isSupabaseCatalogConfigured } from '../lib/su
 import type { CatalogProduct } from '../catalog/types.ts'
 import { catalogImageUrl } from '../catalog/productImages.ts'
 import {
+  catalogSizeLabels,
   defaultDesignCode,
   designCodeRange,
+  formatCatalogSizesForDescription,
   PDP_FINISHES,
   type PdpFinish,
   unitPricePkr,
@@ -113,6 +115,11 @@ export default function ProductPage() {
   }, [product, selectedDesignCode])
 
   const sizeLabels = useMemo(() => activeVariant?.pricing.sizes.map((s) => s.label) ?? [], [activeVariant])
+
+  const descriptionSizesText = useMemo(() => {
+    if (!product) return ''
+    return formatCatalogSizesForDescription(catalogSizeLabels(product))
+  }, [product])
 
   const selectedTier = useMemo(
     () => activeVariant?.pricing.sizes.find((s) => s.label === selectedSize),
@@ -798,7 +805,8 @@ export default function ProductPage() {
                   <strong>Color:</strong> Gold | Black | Silver
                 </li>
                 <li>
-                  <strong>Size:</strong> 6&quot; × 12&quot; | 12&quot; × 18&quot; | 18&quot; × 24&quot;
+                  <strong>Size:</strong>{' '}
+                  {descriptionSizesText || 'Contact us for available dimensions'}
                 </li>
                 <li>
                   <strong>Delivery:</strong> Nationwide delivery (typically 3–5 business days)

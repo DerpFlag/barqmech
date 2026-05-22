@@ -58,3 +58,22 @@ export function designCodeRange(variants: CatalogVariantRow[]): { min: number; m
   if (min === max) return null
   return { min, max }
 }
+
+/** Unique size labels across all variants (catalog order, first variant wins tie-break). */
+export function catalogSizeLabels(product: Pick<CatalogProduct, 'variants'>): string[] {
+  const seen = new Set<string>()
+  const labels: string[] = []
+  for (const variant of product.variants) {
+    for (const tier of variant.pricing.sizes) {
+      const label = tier.label.trim()
+      if (!label || seen.has(label)) continue
+      seen.add(label)
+      labels.push(label)
+    }
+  }
+  return labels
+}
+
+export function formatCatalogSizesForDescription(labels: string[]): string {
+  return labels.join(' | ')
+}
