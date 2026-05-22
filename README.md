@@ -25,7 +25,7 @@ Connect this repo to [Vercel](https://vercel.com). **Leave “Root Directory” 
 
 Set environment variables under **Project → Settings → Environment Variables** (see `store/.env.example`). Include **`ZEROBOUNCE_API_KEY`** if you want the same email verification on checkout, contact, and demo flows (HF used only ZeroBounce; no extra spam hooks there).
 
-**Resend:** `ORDER_FROM_EMAIL` is usually plain `onboarding@resend.dev`. `RESEND_FROM_EMAIL` can be `BarqMech <onboarding@resend.dev>` (display name + space + angle brackets + address). Until you [verify a domain](https://resend.com/docs/dashboard/domains/introduction) in Resend, stay on `onboarding@resend.dev` and only send tests to allowed recipients.
+**Resend:** With `onboarding@resend.dev`, Resend only delivers to **your account email** (set `ORDER_NOTIFY_EMAIL` to that address). Customer order confirmations require a [verified domain](https://resend.com/domains) and `ORDER_FROM_EMAIL=BarqMech <orders@yourdomain.com>`. Checkout still completes; shoppers see their order code on the thank-you page.
 
 **Admin login (`ADMIN_PASSWORD`):** If the correct password still fails, check **Root Directory** is empty (not `store`). If it is set to `store`, Vercel never deploys the root `api/` folder, so `/api/admin-login` is not your serverless route. Redeploy after fixing. Assign `ADMIN_PASSWORD` to **Production** (and **Preview** if you test preview URLs). Leave **`VITE_API_ORIGIN` unset** on Vercel unless the storefront and API intentionally use different origins; otherwise cookies and `/api` calls should stay same-origin.
 

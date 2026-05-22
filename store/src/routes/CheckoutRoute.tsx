@@ -104,6 +104,7 @@ export default function CheckoutPage() {
         error?: string
         customerEmailSent?: boolean
         emailWarning?: string
+        resendTestMode?: boolean
       }
       if (!res.ok) {
         setSubmitting(false)
@@ -142,6 +143,7 @@ export default function CheckoutPage() {
           subtotal,
           shippingTotal,
           customerEmailSent: data.customerEmailSent === true,
+          resendTestMode: data.resendTestMode === true,
           emailWarning: typeof data.emailWarning === 'string' ? data.emailWarning : undefined,
         },
       })

@@ -10,6 +10,7 @@ export type CheckoutSuccessState = {
   shippingTotal?: number
   customerEmailSent?: boolean
   emailWarning?: string
+  resendTestMode?: boolean
 }
 
 export default function CheckoutSuccessPage() {
@@ -28,6 +29,7 @@ export default function CheckoutSuccessPage() {
     typeof successState.shippingTotal === 'number' && Number.isFinite(successState.shippingTotal)
       ? successState.shippingTotal
       : null
+  const resendTestMode = successState.resendTestMode === true
   const customerEmailSent = successState.customerEmailSent === true
   const emailWarning =
     typeof successState.emailWarning === 'string' ? successState.emailWarning.trim() : ''
@@ -93,6 +95,11 @@ export default function CheckoutSuccessPage() {
                 <>
                   {' '}
                   We&apos;ve sent a detailed confirmation to <strong>{customerEmail}</strong>.
+                </>
+              ) : resendTestMode ? (
+                <>
+                  {' '}
+                  Save your order code above — we&apos;ll contact you on the phone number you provided.
                 </>
               ) : customerEmail ? (
                 <>

@@ -42,10 +42,37 @@ function emailRegexOk(email) {
 
 function absoluteAssetUrl(href, siteBase) {
   if (!href) return ''
-  const s = String(href)
+  const s = emailSafeImageUrl(href)
   if (s.startsWith('http://') || s.startsWith('https://')) return s
   if (!siteBase) return s
   return siteBase + (s.startsWith('/') ? s : `/${s}`)
+}
+
+/** Emails must not use Vercel `/_vercel/image` URLs — use the underlying Supabase public URL. */
+function emailSafeImageUrl(href) {
+  const s = String(href || '').trim()
+  if (!s.includes('/_vercel/image')) return s
+  const m = s.match(/[?&]url=([^&]+)/i)
+  if (!m) return s
+  try {
+    return decodeURIComponent(m[1])
+  } catch {
+    return s
+  }
+}
+
+function normalizeEmail(s) {
+  return String(s || '').trim().toLowerCase()
+}
+
+/** Resend test sender: only ORDER_NOTIFY_EMAIL (account inbox) is allowed as recipient. */
+function isResendTestSender(fromEmail) {
+  return normalizeEmail(fromEmail).includes('@resend.dev')
+}
+
+function canResendReachCustomer(customerEmail, fromEmail, notifyEmail) {
+  if (!isResendTestSender(fromEmail)) return true
+  return normalizeEmail(customerEmail) === normalizeEmail(notifyEmail)
 }
 
 function productPageUrl(line, siteBase) {
@@ -513,17 +540,23 @@ export default async function handler(req, res) {
       merchantEmailSent = true
     }
 
-    const toCustomer = await resend.emails.send({
-      ...mailOpts,
-      to: email,
-      subject: `Order confirmed — ${orderCode} · BarqMech`,
-      html: htmlCustomer,
-    })
-    if (toCustomer.error) {
-      emailErrors.customer = toCustomer.error.message || String(toCustomer.error)
-      console.error('[place-order] Resend customer', email, toCustomer.error)
+    if (!canResendReachCustomer(email, fromEmail, notifyEmail)) {
+      emailErrors.customer =
+        'Resend test sender (onboarding@resend.dev) can only email your store notify address until a domain is verified at resend.com/domains.'
+      console.info('[place-order] Skipping customer email (test sender); notify=%s customer=%s', notifyEmail, email)
     } else {
-      customerEmailSent = true
+      const toCustomer = await resend.emails.send({
+        ...mailOpts,
+        to: email,
+        subject: `Order confirmed — ${orderCode} · BarqMech`,
+        html: htmlCustomer,
+      })
+      if (toCustomer.error) {
+        emailErrors.customer = toCustomer.error.message || String(toCustomer.error)
+        console.error('[place-order] Resend customer', email, toCustomer.error)
+      } else {
+        customerEmailSent = true
+      }
     }
   } catch (e) {
     console.error('[place-order] Resend send', e)
@@ -540,14 +573,19 @@ export default async function handler(req, res) {
     })
   }
 
-  const emailWarning = !customerEmailSent
-    ? 'We could not send a confirmation email to the address you entered. Please save your order code on this page.'
-    : null
+  const resendTestMode = isResendTestSender(fromEmail) && !customerEmailSent
+  let emailWarning = null
+  if (!customerEmailSent) {
+    emailWarning = resendTestMode
+      ? 'Your order is confirmed. Email confirmation to shoppers requires a verified domain in Resend — save your order code on this page.'
+      : 'We could not send a confirmation email to the address you entered. Please save your order code on this page.'
+  }
 
   return sendJson(res, 200, {
     orderCode,
     customerEmailSent,
     merchantEmailSent,
+    resendTestMode,
     emailWarning,
     emailErrors: customerEmailSent && merchantEmailSent ? undefined : emailErrors,
   })
