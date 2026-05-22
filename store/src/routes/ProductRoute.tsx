@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent 
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { TopbarCartButton, useCart } from '../cart/CartContext.tsx'
 import { CatalogImage } from '../catalog/CatalogImage.tsx'
+import { RotatingImageStack } from '../catalog/RotatingImageStack.tsx'
 import { CatalogPricingAlert } from '../catalog/CatalogPricingAlert.tsx'
 import { useCatalog } from '../catalog/CatalogProvider.tsx'
 import { loadVariantsForProductId, mergeVariantsIntoProduct } from '../catalog/loadCatalog.ts'
@@ -404,15 +405,16 @@ export default function ProductPage() {
                 role="group"
                 aria-label="Main product images. Use arrow keys to change image."
               >
-                <div className="product-detail-hero-viewport">
-                  <CatalogImage
-                    key={`${product.id}-hero-${activeImageIndex}`}
-                    publicUrl={heroSrc}
-                    size="hero"
+                <div className="product-detail-hero-viewport product-detail-hero-viewport--stack">
+                  <RotatingImageStack
+                    urls={images}
                     alt={product.title}
+                    catalogSize="hero"
+                    activeIndex={activeImageIndex}
+                    stackClassName="product-detail-hero-stack"
+                    imageClassName="product-detail-hero-img"
                     loading="eager"
-                    decoding="async"
-                    className="product-detail-hero-img"
+                    fetchPriority="high"
                   />
                 </div>
                 <div className="product-detail-hero-overlay">

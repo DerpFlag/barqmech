@@ -3,6 +3,19 @@
   "installCommand": "npm install && cd store && npm install",
   "buildCommand": "cd store && npm run build",
   "outputDirectory": "store/dist",
+  "images": {
+    "sizes": [120, 240, 480, 640, 1100, 1920, 2400],
+    "qualities": [72, 78, 82, 88],
+    "formats": ["image/webp", "image/avif"],
+    "minimumCacheTTL": 86400,
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "**.supabase.co",
+        "pathname": "/storage/v1/object/public/product-images/**"
+      }
+    ]
+  },
   "rewrites": [
     {
       "source": "/((?!api/).*)",

@@ -8,7 +8,7 @@ import {
   parsePrice,
   slugToCategory,
 } from '../data/catalog.ts'
-import { CatalogImage } from '../catalog/CatalogImage.tsx'
+import { RotatingImageStack } from '../catalog/RotatingImageStack.tsx'
 import { CatalogPricingAlert } from '../catalog/CatalogPricingAlert.tsx'
 import { useCatalog } from '../catalog/CatalogProvider.tsx'
 import { TopbarCartButton } from '../cart/CartContext.tsx'
@@ -30,8 +30,6 @@ export default function ProductsPage() {
   const [showMobilePriceFilter, setShowMobilePriceFilter] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const shopContact = useShopContactDemo()
-  const [productImageIndexes, setProductImageIndexes] = useState<Record<string, number>>({})
-
   const filteredProducts = products.filter((item) => {
     const categoryMatch = selectedCategory === 'All' || item.category === selectedCategory
     return categoryMatch && parsePrice(item.price) <= maxPrice
@@ -65,28 +63,6 @@ export default function ProductsPage() {
     setMaxPrice(draftMaxPrice)
     setShowMobilePriceFilter(false)
   }
-
-  useEffect(() => {
-    setProductImageIndexes((prev) => {
-      const next = { ...prev }
-      for (const p of products) {
-        if (next[p.id] === undefined) next[p.id] = 0
-      }
-      return next
-    })
-  }, [products])
-
-  useEffect(() => {
-    if (products.length === 0) return
-    const timer = window.setInterval(() => {
-      setProductImageIndexes((prev) =>
-        Object.fromEntries(
-          products.map((item) => [item.id, ((prev[item.id] ?? 0) + 1) % Math.max(item.images.length, 1)])
-        )
-      )
-    }, 2600)
-    return () => window.clearInterval(timer)
-  }, [products])
 
   const scrollToSection = (id: string) =>
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -219,23 +195,19 @@ export default function ProductsPage() {
             ) : (
               <>
                 <div className="shop-route-grid products-grid">
-                  {pagedProducts.map((item) => {
-                    const imageIndex = productImageIndexes[item.id] ?? 0
-                    const cardImage = item.images[imageIndex] ?? item.images[0]
-                    if (!cardImage) return null
+                  {pagedProducts.map((item, cardIndex) => {
+                    if (!item.images.length) return null
                     return (
                     <Link key={item.id} to={`/products/${categorySlugs[item.category]}/${item.slug}`} className="shop-route-card">
-                      <div className="shop-route-image-stack">
-                        <CatalogImage
-                          key={`${item.id}-${imageIndex}`}
-                          publicUrl={cardImage}
-                          size="card"
-                          alt={item.title}
-                          className="shop-route-image active"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </div>
+                      <RotatingImageStack
+                        urls={item.images}
+                        alt={item.title}
+                        catalogSize="card"
+                        stackClassName="shop-route-image-stack"
+                        imageClassName="shop-route-image"
+                        rotate
+                        intervalMs={2800 + (cardIndex % 4) * 220}
+                      />
                       <h3>{item.title}</h3>
                       <p>{item.price}</p>
                     </Link>

@@ -75,7 +75,10 @@ node --env-file=.env.import.local scripts/rebuild-image-urls-from-storage.mjs
 ## Image performance notes
 
 - Full-size files are served from `product-images` (often ~150–500 KB+ per file).
-- Supabase **image transforms** (`/storage/v1/render/image/...`) returned 403 on this project — enable on Pro or add smaller `preview-*` assets at import time.
+- **Without Supabase Pro:** use **Vercel Image Optimization** — set `VITE_CATALOG_IMAGE_OPTIMIZER=vercel` on Vercel Production. The app requests `/_vercel/image?url=…&w=…` for public `product-images` URLs (configured in root `vercel.json`). One file in Storage; no re-import.
+- **With Supabase Pro:** optional `VITE_CATALOG_IMAGE_TRANSFORMS=true` (Storage `/render/image/...`) instead of or before Vercel.
+- **Without Vercel optimizer:** run import with Sharp to upload `{slug}/card-{i}.webp` thumbs and point listing URLs at those paths (heavier; ask if you want this scripted).
+- Listing pages use **stacked crossfade** (`RotatingImageStack`) and preload slides before rotation starts.
 - PDP loads **one hero URL at a time**; lightbox uses the original URL on zoom.
 
 ## Secrets

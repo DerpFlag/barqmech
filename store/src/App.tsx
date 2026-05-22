@@ -12,6 +12,7 @@ import {
   type FeaturedCategory,
 } from './data/catalog.ts'
 import { CatalogProvider, useCatalogProducts } from './catalog/CatalogProvider.tsx'
+import { RotatingImageStack } from './catalog/RotatingImageStack.tsx'
 import { IntroHero } from './IntroHero.tsx'
 import { HexagonBackground } from './HexagonBackground.tsx'
 import { CartProvider, TopbarCartButton } from './cart/CartContext.tsx'
@@ -44,9 +45,7 @@ function HomePage() {
   const [contactSubmitting, setContactSubmitting] = useState(false)
   const [contactStatus, setContactStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [contactFieldErrors, setContactFieldErrors] = useState<{ email?: string; phone?: string }>({})
-  const [galleryIndexes, setGalleryIndexes] = useState<Record<string, number>>(Object.fromEntries(galleryTiles.map((tile) => [tile.id, 0])))
   const [featuredIndexes, setFeaturedIndexes] = useState<Record<FeaturedCategory, number>>({ Islamic: 0, Artwork: 0, Panels: 0, Misc: 0 })
-  const [featuredImageIndexes, setFeaturedImageIndexes] = useState<Record<string, number>>({})
   const [featuredStep, setFeaturedStep] = useState(25)
 
   /** Mosaic + featured blocks: pause carousel timers until near viewport (saves work while intro / hero fills screen). */
@@ -90,29 +89,6 @@ function HomePage() {
 
   useEffect(() => {
     if (!carouselEngaged) return
-    const timers = galleryTiles.map((tile) =>
-      window.setInterval(() => {
-        const len = tile.images.length
-        if (len <= 0) return
-        setGalleryIndexes((prev) => ({ ...prev, [tile.id]: ((prev[tile.id] ?? 0) + 1) % len }))
-      }, tile.intervalMs)
-    )
-    return () => timers.forEach((timer) => window.clearInterval(timer))
-  }, [carouselEngaged])
-
-  useEffect(() => {
-    if (!homeEffectsReady) return
-    setFeaturedImageIndexes((prev) => {
-      const next = { ...prev }
-      for (const p of products) {
-        if (next[p.id] === undefined) next[p.id] = 0
-      }
-      return next
-    })
-  }, [homeEffectsReady, products])
-
-  useEffect(() => {
-    if (!carouselEngaged) return
     const timers = featuredCategories.map((category, categoryIndex) =>
       window.setInterval(() => {
         const categoryItems = products.filter((item) => item.category === category)
@@ -121,18 +97,6 @@ function HomePage() {
       }, 3000 + categoryIndex * 280)
     )
     return () => timers.forEach((timer) => window.clearInterval(timer))
-  }, [carouselEngaged, products])
-
-  useEffect(() => {
-    if (!carouselEngaged || products.length === 0) return
-    const timer = window.setInterval(() => {
-      setFeaturedImageIndexes((prev) =>
-        Object.fromEntries(
-          products.map((item) => [item.id, ((prev[item.id] ?? 0) + 1) % Math.max(item.images.length, 1)])
-        )
-      )
-    }, 2600)
-    return () => window.clearInterval(timer)
   }, [carouselEngaged, products])
 
   useEffect(() => {
@@ -332,7 +296,7 @@ function HomePage() {
         <main className={`site-content ${uiVisible ? 'visible' : ''}`}>
           <section className="categories-section" id="collections"><div className="section-head"><h2>Product Categories</h2><p>Browse our core metal cutting capabilities below.</p></div></section>
           <div ref={retailCarouselRootRef} className="home-retail-carousel-root">
-          <section className="mosaic-section" aria-label="Category image gallery"><div className="mosaic-grid">{galleryTiles.map((tile) => {const activeIndex = galleryIndexes[tile.id] ?? 0; const targetCategory = galleryTileRouteCategory[tile.id]; return <article key={tile.id} className={`mosaic-tile ${tile.className}`}><div className="mosaic-image-stack">{tile.images.map((image, index) => <img key={`${tile.id}-${image}`} src={image} alt={tile.title} className={`mosaic-image ${index === activeIndex ? 'active' : ''}`} loading="lazy" decoding="async" />)}</div><div className="mosaic-overlay"><h3>{tile.title}</h3><Link to={`/products?category=${categorySlugs[targetCategory]}`} className="mosaic-discover-btn">Discover</Link></div></article>})}</div></section>
+          <section className="mosaic-section" aria-label="Category image gallery"><div className="mosaic-grid">{galleryTiles.map((tile) => {const targetCategory = galleryTileRouteCategory[tile.id]; return <article key={tile.id} className={`mosaic-tile ${tile.className}`}><RotatingImageStack urls={tile.images} alt={tile.title} stackClassName="mosaic-image-stack" imageClassName="mosaic-image" rotate={carouselEngaged} intervalMs={tile.intervalMs} /><div className="mosaic-overlay"><h3>{tile.title}</h3><Link to={`/products?category=${categorySlugs[targetCategory]}`} className="mosaic-discover-btn">Discover</Link></div></article>})}</div></section>
 
           <section className="product-grid-section" id="shop">
             {featuredCategories.map((category) => {
@@ -351,9 +315,15 @@ function HomePage() {
                         {loopItems.map((item, index) => (
                           <article key={`${item.id}-${category}-${index}`} className="featured-card">
                             <Link to={`/products/${categorySlugs[category]}/${item.slug}`} className="featured-card-link">
-                              <div className="featured-image-stack">
-                                {item.images.map((image, imageIndex) => <img key={`${item.id}-${image}`} src={image} alt={item.title} className={`featured-image ${imageIndex === (featuredImageIndexes[item.id] ?? 0) ? 'active' : ''}`} loading="lazy" decoding="async" />)}
-                              </div>
+                              <RotatingImageStack
+                                urls={item.images}
+                                alt={item.title}
+                                catalogSize="card"
+                                stackClassName="featured-image-stack"
+                                imageClassName="featured-image"
+                                rotate={carouselEngaged}
+                                intervalMs={2600 + (index % 5) * 180}
+                              />
                               <h3>{item.title}</h3>
                               <p className="featured-price">{item.price}</p>
                             </Link>

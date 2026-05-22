@@ -2255,11 +2255,35 @@ body.intro-playing {
   box-sizing: border-box;
 }
 
-.product-detail-hero-slide img {
+.product-detail-hero-slide img,
+.product-detail-hero-img {
   width: 100%;
   height: 100%;
   object-fit: contain;
   display: block;
+}
+
+.product-detail-hero-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.product-detail-hero-viewport--stack .product-detail-hero-img {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.product-detail-hero-viewport--stack .product-detail-hero-img.active {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-detail-hero-viewport--stack .product-detail-hero-img {
+    transition: none;
+  }
 }
 
 .product-detail-hero-overlay {
