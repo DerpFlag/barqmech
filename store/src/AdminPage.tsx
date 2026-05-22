@@ -105,6 +105,24 @@ function IconShield() {
 
 type OrderFilter = 'all' | 'open' | 'done'
 
+function orderMatchesSearch(order: AdminOrder, rawQuery: string) {
+  const q = rawQuery.trim().toLowerCase()
+  if (!q) return true
+  const qDigits = q.replace(/\D/g, '')
+  const fields = [
+    order.order_code,
+    order.customer_name,
+    order.customer_email,
+    order.customer_phone,
+  ].map((v) => String(v ?? '').toLowerCase())
+  if (fields.some((f) => f.includes(q))) return true
+  if (qDigits.length >= 2) {
+    const phoneDigits = String(order.customer_phone ?? '').replace(/\D/g, '')
+    if (phoneDigits.includes(qDigits)) return true
+  }
+  return false
+}
+
 export function AdminPage() {
   const [checking, setChecking] = useState(true)
   const [sessionOk, setSessionOk] = useState(false)
@@ -116,6 +134,7 @@ export function AdminPage() {
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [filter, setFilter] = useState<OrderFilter>('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const [lastSynced, setLastSynced] = useState<string | null>(null)
 
   const loadSession = useCallback(async () => {
@@ -176,10 +195,13 @@ export function AdminPage() {
   }, [orders])
 
   const filteredOrders = useMemo(() => {
-    if (filter === 'open') return orders.filter((o) => !o.order_completed)
-    if (filter === 'done') return orders.filter((o) => Boolean(o.order_completed))
-    return orders
-  }, [orders, filter])
+    let list = orders
+    if (filter === 'open') list = list.filter((o) => !o.order_completed)
+    else if (filter === 'done') list = list.filter((o) => Boolean(o.order_completed))
+    const q = searchQuery.trim()
+    if (q) list = list.filter((o) => orderMatchesSearch(o, q))
+    return list
+  }, [orders, filter, searchQuery])
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
@@ -243,6 +265,7 @@ export function AdminPage() {
     setSessionOk(false)
     setOrders([])
     setFilter('all')
+    setSearchQuery('')
   }
 
   const setOrderCompleted = async (orderId: string, completed: boolean) => {
@@ -399,6 +422,27 @@ export function AdminPage() {
           </article>
         </section>
 
+        <div className="admin-search-row">
+          <label className="admin-search" htmlFor="admin-order-search">
+            <span className="admin-search-label">Search</span>
+            <input
+              id="admin-order-search"
+              className="admin-field-input admin-search-input"
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Order code, name, email, or phone…"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </label>
+          {searchQuery.trim() ? (
+            <p className="admin-search-meta" role="status">
+              {filteredOrders.length} {filteredOrders.length === 1 ? 'order' : 'orders'}
+            </p>
+          ) : null}
+        </div>
+
         <div className="admin-toolbar">
           <div className="admin-filter" role="group" aria-label="Filter orders">
             {(['all', 'open', 'done'] as const).map((key) => (
@@ -528,11 +572,21 @@ export function AdminPage() {
 
         {!ordersLoading && filteredOrders.length === 0 ? (
           <div className="admin-empty">
-            <p className="admin-empty-title">{filter === 'all' ? 'No orders yet' : filter === 'open' ? 'No open orders' : 'No completed orders'}</p>
+            <p className="admin-empty-title">
+              {searchQuery.trim()
+                ? 'No matching orders'
+                : filter === 'all'
+                  ? 'No orders yet'
+                  : filter === 'open'
+                    ? 'No open orders'
+                    : 'No completed orders'}
+            </p>
             <p className="admin-empty-text">
-              {filter === 'all'
-                ? 'New checkout orders will appear here automatically.'
-                : 'Try another filter or refresh.'}
+              {searchQuery.trim()
+                ? 'Try a different code, name, email, or phone number.'
+                : filter === 'all'
+                  ? 'New checkout orders will appear here automatically.'
+                  : 'Try another filter or refresh.'}
             </p>
           </div>
         ) : null}
