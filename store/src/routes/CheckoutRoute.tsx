@@ -9,6 +9,7 @@ import {
 } from '../data/catalog.ts'
 import { OrderDesignContactFooter, useShopContactDemo } from '../components/shopContact.tsx'
 import { getEmailFieldError, getPakistanPhoneFieldError } from '../lib/contactFormValidation.ts'
+import { verifyCustomerEmail } from '../lib/validateCustomerEmailApi.ts'
 
 
 export default function CheckoutPage() {
@@ -23,6 +24,7 @@ export default function CheckoutPage() {
   const [city, setCity] = useState('')
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [verifyingEmail, setVerifyingEmail] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [emailFieldError, setEmailFieldError] = useState<string | null>(null)
   const [phoneFieldError, setPhoneFieldError] = useState<string | null>(null)
@@ -63,6 +65,17 @@ export default function CheckoutPage() {
     setEmailFieldError(null)
     setPhoneFieldError(null)
     setSubmitting(true)
+    setVerifyingEmail(true)
+    try {
+      await verifyCustomerEmail(mail)
+    } catch (error) {
+      setSubmitting(false)
+      setVerifyingEmail(false)
+      const msg = error instanceof Error ? error.message : 'Email verification failed.'
+      setEmailFieldError(msg)
+      return
+    }
+    setVerifyingEmail(false)
     const payloadLines = lines.map((l) => ({
       mergeKey: l.mergeKey,
       productId: l.productId,
@@ -311,7 +324,7 @@ export default function CheckoutPage() {
                   </p>
                 ) : null}
                 <button type="submit" className="checkout-submit-btn" disabled={submitting}>
-                  {submitting ? 'Placing order…' : 'Place order'}
+                  {verifyingEmail ? 'Verifying email…' : submitting ? 'Placing order…' : 'Place order'}
                 </button>
               </form>
             </section>

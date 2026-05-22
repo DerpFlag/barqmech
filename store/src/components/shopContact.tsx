@@ -1,5 +1,6 @@
 import { memo, useState, type FormEvent } from 'react'
 import { getEmailFieldError, getPakistanPhoneFieldError } from '../lib/contactFormValidation.ts'
+import { verifyCustomerEmail } from '../lib/validateCustomerEmailApi.ts'
 
 export function useShopContactDemo() {
   const [demoPromptOpen, setDemoPromptOpen] = useState(false)
@@ -7,6 +8,7 @@ export function useShopContactDemo() {
   const [demoSubmitting, setDemoSubmitting] = useState(false)
   const [demoStatus, setDemoStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [contactSubmitting, setContactSubmitting] = useState(false)
+  const [contactVerifyingEmail, setContactVerifyingEmail] = useState(false)
   const [contactStatus, setContactStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [contactFieldErrors, setContactFieldErrors] = useState<{ email?: string; phone?: string }>({})
 
@@ -19,13 +21,7 @@ export function useShopContactDemo() {
       setDemoSubmitting(true)
       setDemoStatus(null)
       try {
-        const response = await fetch('/api/validate-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: normalized }),
-        })
-        const result = (await response.json().catch(() => ({}))) as { error?: string }
-        if (!response.ok) throw new Error(result.error || 'Email verification failed.')
+        await verifyCustomerEmail(normalized)
         const calendlyUrl = `https://calendly.com/derpflag/30min?email=${encodeURIComponent(normalized)}`
         window.open(calendlyUrl, '_blank', 'noopener,noreferrer')
         setDemoStatus({ type: 'success', message: 'Opening Calendly...' })
@@ -63,9 +59,14 @@ export function useShopContactDemo() {
       return
     }
     setContactSubmitting(true)
+    setContactVerifyingEmail(true)
     setContactStatus(null)
     setContactFieldErrors({})
+    let emailVerified = false
     try {
+      await verifyCustomerEmail(email)
+      emailVerified = true
+      setContactVerifyingEmail(false)
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -83,9 +84,16 @@ export function useShopContactDemo() {
       setContactFieldErrors({})
       setContactStatus({ type: 'success', message: 'Message sent successfully. We will get back to you soon.' })
     } catch (error) {
-      setContactFieldErrors({})
-      setContactStatus({ type: 'error', message: error instanceof Error ? error.message : 'Failed to send message.' })
+      const msg = error instanceof Error ? error.message : 'Failed to send message.'
+      if (!emailVerified) {
+        setContactFieldErrors({ email: msg })
+        setContactStatus(null)
+      } else {
+        setContactFieldErrors({})
+        setContactStatus({ type: 'error', message: msg })
+      }
     } finally {
+      setContactVerifyingEmail(false)
       setContactSubmitting(false)
     }
   }
@@ -98,6 +106,7 @@ export function useShopContactDemo() {
     demoSubmitting,
     demoStatus,
     contactSubmitting,
+    contactVerifyingEmail,
     contactStatus,
     contactFieldErrors,
     handleContactSubmit,
@@ -122,6 +131,7 @@ function OrderDesignContactFooterInner({
     demoSubmitting,
     demoStatus,
     contactSubmitting,
+    contactVerifyingEmail,
     contactStatus,
     contactFieldErrors,
     handleContactSubmit,
@@ -171,7 +181,7 @@ function OrderDesignContactFooterInner({
                 <textarea name="message" placeholder="Tell us about your project or inquiry..." rows={6} required />
               </label>
               <button type="submit" className="contact-send-btn" disabled={contactSubmitting}>
-                {contactSubmitting ? 'Sending...' : 'Send Message'}
+                {contactVerifyingEmail ? 'Verifying email...' : contactSubmitting ? 'Sending...' : 'Send Message'}
               </button>
               {contactStatus && <p className={`contact-status ${contactStatus.type}`}>{contactStatus.message}</p>}
             </form>
