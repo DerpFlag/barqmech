@@ -1,5 +1,5 @@
 import { Resend } from 'resend'
-import { validateWithZeroBounce } from './lib/zero-bounce.mjs'
+import { emailFormatOk, validateCustomerEmail } from './lib/validate-customer-email.mjs'
 import { escapeHtml, resolveSiteBaseUrl, emailShell } from './lib/email-brand.mjs'
 import { isPakistanMobile, telHrefFromPakistanRaw } from './lib/pakistan-phone.mjs'
 
@@ -8,9 +8,6 @@ const resendFromEmail = process.env.RESEND_FROM_EMAIL
 const contactToEmail = process.env.CONTACT_TO_EMAIL
 
 const resend = resendApiKey ? new Resend(resendApiKey) : null
-
-const EMAIL_REGEX =
-  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]{2,})+$/
 
 const logUpstreamError = (context: string, details: Record<string, unknown>) => {
   console.error(`[contact] ${context}`, details)
@@ -36,16 +33,13 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Missing required fields.' })
   }
 
-  if (!EMAIL_REGEX.test(email) || email.includes('..')) {
+  if (!emailFormatOk(email)) {
     return res.status(400).json({ error: 'Please enter a valid email address.' })
   }
 
-  const emailValidation = await validateWithZeroBounce(email)
-  if (emailValidation.skipped) {
-    console.warn('[contact] ZeroBounce skipped:', emailValidation.skipReason)
-  }
+  const emailValidation = await validateCustomerEmail(email)
   if (!emailValidation.ok) {
-    return res.status(emailValidation.code === 429 ? 429 : 400).json({ error: emailValidation.reason })
+    return res.status(400).json({ error: emailValidation.reason })
   }
 
   const siteBase = resolveSiteBaseUrl(body)

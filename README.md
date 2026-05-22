@@ -23,7 +23,7 @@ Connect this repo to [Vercel](https://vercel.com). **Leave “Root Directory” 
 | Build Command | `cd store && npm run build` |
 | Output Directory | `store/dist` |
 
-Set environment variables under **Project → Settings → Environment Variables** (see `store/.env.example`). Include **`ZEROBOUNCE_API_KEY`** if you want the same email verification on checkout, contact, and demo flows (HF used only ZeroBounce; no extra spam hooks there).
+Set environment variables under **Project → Settings → Environment Variables** (see `store/.env.example`). Checkout and contact forms validate email with a **free built-in check** (disposable blocklist + DNS MX). No ZeroBounce or other paid API required. Remove **`ZEROBOUNCE_API_KEY`** from Vercel if it is still set.
 
 **Resend:** With `onboarding@resend.dev`, Resend only delivers to **your account email** (set `ORDER_NOTIFY_EMAIL` to that address). Customer order confirmations require a [verified domain](https://resend.com/domains) and `ORDER_FROM_EMAIL=BarqMech <orders@yourdomain.com>`. Checkout still completes; shoppers see their order code on the thank-you page.
 

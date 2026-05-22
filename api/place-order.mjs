@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import { randomInt, randomUUID } from 'node:crypto'
-import { validateWithZeroBounce } from './lib/zero-bounce.mjs'
+import { emailFormatOk, validateCustomerEmail } from './lib/validate-customer-email.mjs'
 import { escapeHtml, resolveSiteBaseUrl, emailShell } from './lib/email-brand.mjs'
 import { isPakistanMobile } from './lib/pakistan-phone.mjs'
 
@@ -33,11 +33,6 @@ function formatPkr(n) {
 /** Six-digit string, uniform in [100000, 999999]. */
 function randomSixDigit() {
   return String(randomInt(100000, 1000000))
-}
-
-function emailRegexOk(email) {
-  const e = String(email).trim()
-  return /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]{2,})+$/.test(e) && !e.includes('..')
 }
 
 function absoluteAssetUrl(href, siteBase) {
@@ -423,7 +418,7 @@ export default async function handler(req, res) {
   if (!name || !addressLine1) {
     return sendJson(res, 400, { error: 'Please provide your full name and street address.' })
   }
-  if (!emailRegexOk(email)) {
+  if (!emailFormatOk(email)) {
     return sendJson(res, 400, { error: 'Please enter a valid email address (for example you@example.com).' })
   }
   if (!String(phone || '').trim()) {
@@ -435,13 +430,9 @@ export default async function handler(req, res) {
     })
   }
 
-  const zb = await validateWithZeroBounce(email)
-  if (!zb.ok) {
-    const st = zb.code === 429 ? 429 : 400
-    return sendJson(res, st, { error: zb.reason })
-  }
-  if (zb.skipped) {
-    console.warn('[place-order] ZeroBounce skipped:', zb.skipReason)
+  const emailCheck = await validateCustomerEmail(email)
+  if (!emailCheck.ok) {
+    return sendJson(res, 400, { error: emailCheck.reason })
   }
 
   const { subtotal, shipping, grand } = recomputeTotals(lines)
