@@ -8,6 +8,8 @@ export type CheckoutSuccessState = {
   grandTotal?: number
   subtotal?: number
   shippingTotal?: number
+  customerEmailSent?: boolean
+  emailWarning?: string
 }
 
 export default function CheckoutSuccessPage() {
@@ -26,6 +28,9 @@ export default function CheckoutSuccessPage() {
     typeof successState.shippingTotal === 'number' && Number.isFinite(successState.shippingTotal)
       ? successState.shippingTotal
       : null
+  const customerEmailSent = successState.customerEmailSent === true
+  const emailWarning =
+    typeof successState.emailWarning === 'string' ? successState.emailWarning.trim() : ''
   const [searchQuery, setSearchQuery] = useState('')
   const validCode = /^\d{6}$/.test(code)
 
@@ -84,15 +89,25 @@ export default function CheckoutSuccessPage() {
             </p>
             <p>
               Your order code is <strong className="checkout-order-code">{code}</strong>. Keep it handy for any follow-up.
-              {customerEmail ? (
+              {customerEmailSent && customerEmail ? (
                 <>
                   {' '}
                   We&apos;ve sent a detailed confirmation to <strong>{customerEmail}</strong>.
                 </>
+              ) : customerEmail ? (
+                <>
+                  {' '}
+                  We could not email <strong>{customerEmail}</strong> — keep your order code above for your records.
+                </>
               ) : (
-                <> A confirmation email is on its way.</>
+                <> Keep your order code above for your records.</>
               )}
             </p>
+            {emailWarning ? (
+              <p className="checkout-success-email-warning" role="status">
+                {emailWarning}
+              </p>
+            ) : null}
             {grandTotal != null ? (
               <div className="checkout-success-cod-card" role="region" aria-label="Payment summary">
                 <p className="checkout-success-cod-label">Amount due when your order arrives</p>

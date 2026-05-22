@@ -494,35 +494,61 @@ export default async function handler(req, res) {
   const htmlCustomer = buildCustomerEmailHtml(emailCtx)
   const htmlMerchant = buildMerchantEmailHtml(emailCtx)
 
-  try {
-    const [toCustomer, toMerchant] = await Promise.all([
-      resend.emails.send({
-        from: fromEmail,
-        to: email,
-        subject: `Order confirmed — ${orderCode} · BarqMech`,
-        html: htmlCustomer,
-      }),
-      resend.emails.send({
-        from: fromEmail,
-        to: notifyEmail,
-        subject: `New order ${orderCode} · ${formatPkr(grand)} COD · ${name}`,
-        html: htmlMerchant,
-      }),
-    ])
+  const mailOpts = { from: fromEmail, replyTo: notifyEmail }
+  let customerEmailSent = false
+  let merchantEmailSent = false
+  const emailErrors = { customer: null, merchant: null }
 
-    if (toCustomer.error) console.error('Resend customer', toCustomer.error)
-    if (toMerchant.error) console.error('Resend merchant', toMerchant.error)
-    if (toCustomer.error || toMerchant.error) {
-      return sendJson(res, 502, {
-        error: 'Order saved but email failed',
-        orderCode,
-        emailErrors: { customer: toCustomer.error?.message, merchant: toMerchant.error?.message },
-      })
+  try {
+    const toMerchant = await resend.emails.send({
+      ...mailOpts,
+      to: notifyEmail,
+      subject: `New order ${orderCode} · ${formatPkr(grand)} COD · ${name}`,
+      html: htmlMerchant,
+    })
+    if (toMerchant.error) {
+      emailErrors.merchant = toMerchant.error.message || String(toMerchant.error)
+      console.error('[place-order] Resend merchant', toMerchant.error)
+    } else {
+      merchantEmailSent = true
+    }
+
+    const toCustomer = await resend.emails.send({
+      ...mailOpts,
+      to: email,
+      subject: `Order confirmed — ${orderCode} · BarqMech`,
+      html: htmlCustomer,
+    })
+    if (toCustomer.error) {
+      emailErrors.customer = toCustomer.error.message || String(toCustomer.error)
+      console.error('[place-order] Resend customer', email, toCustomer.error)
+    } else {
+      customerEmailSent = true
     }
   } catch (e) {
-    console.error(e)
-    return sendJson(res, 502, { error: 'Order saved but email failed', orderCode })
+    console.error('[place-order] Resend send', e)
+    emailErrors.customer = emailErrors.customer || (e instanceof Error ? e.message : 'Send failed')
   }
 
-  return sendJson(res, 200, { orderCode })
+  if (!customerEmailSent && !merchantEmailSent) {
+    return sendJson(res, 502, {
+      error: 'Order saved but confirmation emails could not be sent',
+      orderCode,
+      customerEmailSent: false,
+      merchantEmailSent: false,
+      emailErrors,
+    })
+  }
+
+  const emailWarning = !customerEmailSent
+    ? 'We could not send a confirmation email to the address you entered. Please save your order code on this page.'
+    : null
+
+  return sendJson(res, 200, {
+    orderCode,
+    customerEmailSent,
+    merchantEmailSent,
+    emailWarning,
+    emailErrors: customerEmailSent && merchantEmailSent ? undefined : emailErrors,
+  })
 }

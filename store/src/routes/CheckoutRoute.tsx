@@ -99,9 +99,32 @@ export default function CheckoutPage() {
           grandTotal,
         }),
       })
-      const data = (await res.json().catch(() => ({}))) as { orderCode?: string; error?: string }
+      const data = (await res.json().catch(() => ({}))) as {
+        orderCode?: string
+        error?: string
+        customerEmailSent?: boolean
+        emailWarning?: string
+      }
       if (!res.ok) {
         setSubmitting(false)
+        if (data.orderCode) {
+          clearCart()
+          navigate(`/checkout/success?code=${encodeURIComponent(data.orderCode)}`, {
+            replace: true,
+            state: {
+              customerEmail: mail,
+              grandTotal,
+              subtotal,
+              shippingTotal,
+              customerEmailSent: false,
+              emailWarning:
+                typeof data.error === 'string'
+                  ? data.error
+                  : 'Order saved but confirmation email could not be sent.',
+            },
+          })
+          return
+        }
         setSubmitError(typeof data.error === 'string' ? data.error : 'Could not place order')
         return
       }
@@ -118,6 +141,8 @@ export default function CheckoutPage() {
           grandTotal,
           subtotal,
           shippingTotal,
+          customerEmailSent: data.customerEmailSent === true,
+          emailWarning: typeof data.emailWarning === 'string' ? data.emailWarning : undefined,
         },
       })
     } catch {
