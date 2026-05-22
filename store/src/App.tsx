@@ -17,7 +17,7 @@ import { IntroHero } from './IntroHero.tsx'
 import { HexagonBackground } from './HexagonBackground.tsx'
 import { CartProvider, TopbarCartButton } from './cart/CartContext.tsx'
 import { getEmailFieldError, getPakistanPhoneFieldError } from './lib/contactFormValidation.ts'
-import { verifyCustomerEmail } from './lib/validateCustomerEmailApi.ts'
+import { isGmailValidationError } from './lib/gmailEmail.ts'
 
 const ProductsPage = lazy(() => import('./routes/ProductsRoute.tsx'))
 const ProductPage = lazy(() => import('./routes/ProductRoute.tsx'))
@@ -41,10 +41,8 @@ function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [demoPromptOpen, setDemoPromptOpen] = useState(false)
   const [demoEmail, setDemoEmail] = useState('')
-  const [demoSubmitting, setDemoSubmitting] = useState(false)
   const [demoStatus, setDemoStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [contactSubmitting, setContactSubmitting] = useState(false)
-  const [contactVerifyingEmail, setContactVerifyingEmail] = useState(false)
   const [contactStatus, setContactStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [contactFieldErrors, setContactFieldErrors] = useState<{ email?: string; phone?: string }>({})
   const [featuredIndexes, setFeaturedIndexes] = useState<Record<FeaturedCategory, number>>({ Islamic: 0, Artwork: 0, Panels: 0, Misc: 0 })
@@ -150,26 +148,16 @@ function HomePage() {
   }
 
   const openCalendly = () => {
-    const run = async () => {
-      if (demoSubmitting) return
-      const normalized = demoEmail.trim()
-      const emailErr = getEmailFieldError(normalized)
-      if (emailErr) return setDemoStatus({ type: 'error', message: emailErr })
-      setDemoSubmitting(true)
-      setDemoStatus(null)
-      try {
-        await verifyCustomerEmail(normalized)
-        const calendlyUrl = `https://calendly.com/derpflag/30min?email=${encodeURIComponent(normalized)}`
-        window.open(calendlyUrl, '_blank', 'noopener,noreferrer')
-        setDemoStatus({ type: 'success', message: 'Opening Calendly...' })
-        setDemoPromptOpen(false)
-      } catch (error) {
-        setDemoStatus({ type: 'error', message: error instanceof Error ? error.message : 'Email verification failed.' })
-      } finally {
-        setDemoSubmitting(false)
-      }
+    const normalized = demoEmail.trim()
+    const emailErr = getEmailFieldError(normalized)
+    if (emailErr) {
+      setDemoStatus({ type: 'error', message: emailErr })
+      return
     }
-    void run()
+    setDemoStatus({ type: 'success', message: 'Opening Calendly...' })
+    const calendlyUrl = `https://calendly.com/derpflag/30min?email=${encodeURIComponent(normalized)}`
+    window.open(calendlyUrl, '_blank', 'noopener,noreferrer')
+    setDemoPromptOpen(false)
   }
 
   const handleContactSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -196,14 +184,9 @@ function HomePage() {
       return
     }
     setContactSubmitting(true)
-    setContactVerifyingEmail(true)
     setContactStatus(null)
     setContactFieldErrors({})
-    let emailVerified = false
     try {
-      await verifyCustomerEmail(email)
-      emailVerified = true
-      setContactVerifyingEmail(false)
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -216,21 +199,22 @@ function HomePage() {
         }),
       })
       const result = (await response.json().catch(() => ({}))) as { error?: string }
-      if (!response.ok) throw new Error(result.error || 'Failed to send message.')
+      if (!response.ok) {
+        const msg = result.error || 'Failed to send message. Please try again.'
+        if (isGmailValidationError(msg)) {
+          setContactFieldErrors({ email: msg })
+          setContactStatus(null)
+          return
+        }
+        throw new Error(msg)
+      }
       form.reset()
       setContactFieldErrors({})
       setContactStatus({ type: 'success', message: 'Message sent successfully. We will get back to you soon.' })
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Failed to send message.'
-      if (!emailVerified) {
-        setContactFieldErrors({ email: msg })
-        setContactStatus(null)
-      } else {
-        setContactFieldErrors({})
-        setContactStatus({ type: 'error', message: msg })
-      }
+      setContactFieldErrors({})
+      setContactStatus({ type: 'error', message: error instanceof Error ? error.message : 'Failed to send message. Please try again.' })
     } finally {
-      setContactVerifyingEmail(false)
       setContactSubmitting(false)
     }
   }
@@ -391,7 +375,7 @@ function HomePage() {
                   </label>
                   <label>Message *<textarea name="message" placeholder="Tell us about your project or inquiry..." rows={6} required /></label>
                   <button type="submit" className="contact-send-btn" disabled={contactSubmitting}>
-                    {contactVerifyingEmail ? 'Verifying email...' : contactSubmitting ? 'Sending...' : 'Send Message'}
+                    {contactSubmitting ? 'Sending...' : 'Send Message'}
                   </button>
                   {contactStatus && <p className={`contact-status ${contactStatus.type}`}>{contactStatus.message}</p>}
                 </form>
@@ -409,7 +393,7 @@ function HomePage() {
                 <div className="contact-info-box"><h4>Ready to Get Started?</h4><p>At BarqMech, we design and fabricate premium metal solutions that elevate commercial and residential spaces. From custom gates and railings to decorative panels and lighting structures, we deliver quality craftsmanship built to last.</p></div>
                 <div className="contact-info-box"><h4>Response Time</h4><p>We typically respond to inquiries within 2-5 hours during business days. For urgent matters, please call us directly.</p></div>
                 <button type="button" className="book-demo-btn" onClick={() => setDemoPromptOpen((v) => !v)}>Book a Demo</button>
-                {demoPromptOpen && <div className="demo-prompt"><label htmlFor="demo-email">Work Email</label><input id="demo-email" type="email" value={demoEmail} onChange={(e) => setDemoEmail(e.target.value)} placeholder="you@company.com" /><button type="button" onClick={openCalendly} disabled={demoSubmitting}>{demoSubmitting ? 'Verifying Email...' : 'Continue to Calendly'}</button>{demoStatus && <p className={`contact-status ${demoStatus.type}`}>{demoStatus.message}</p>}</div>}
+                {demoPromptOpen && <div className="demo-prompt"><label htmlFor="demo-email">Work Email</label><input id="demo-email" type="email" value={demoEmail} onChange={(e) => setDemoEmail(e.target.value)} placeholder="you@company.com" /><button type="button" onClick={openCalendly}>Continue to Calendly</button>{demoStatus && <p className={`contact-status ${demoStatus.type}`}>{demoStatus.message}</p>}</div>}
         </div>
         </div>
       </section>

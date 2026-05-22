@@ -8,9 +8,6 @@ export type CheckoutSuccessState = {
   grandTotal?: number
   subtotal?: number
   shippingTotal?: number
-  customerEmailSent?: boolean
-  emailWarning?: string
-  resendTestMode?: boolean
 }
 
 export default function CheckoutSuccessPage() {
@@ -29,10 +26,6 @@ export default function CheckoutSuccessPage() {
     typeof successState.shippingTotal === 'number' && Number.isFinite(successState.shippingTotal)
       ? successState.shippingTotal
       : null
-  const resendTestMode = successState.resendTestMode === true
-  const customerEmailSent = successState.customerEmailSent === true
-  const emailWarning =
-    typeof successState.emailWarning === 'string' ? successState.emailWarning.trim() : ''
   const [searchQuery, setSearchQuery] = useState('')
   const validCode = /^\d{6}$/.test(code)
 
@@ -91,30 +84,13 @@ export default function CheckoutSuccessPage() {
             </p>
             <p>
               Your order code is <strong className="checkout-order-code">{code}</strong>. Keep it handy for any follow-up.
-              {customerEmailSent && customerEmail ? (
+              {customerEmail ? (
                 <>
                   {' '}
-                  We&apos;ve sent a detailed confirmation to <strong>{customerEmail}</strong>.
+                  We&apos;ve sent a confirmation to <strong>{customerEmail}</strong>.
                 </>
-              ) : resendTestMode ? (
-                <>
-                  {' '}
-                  Save your order code above — we&apos;ll contact you on the phone number you provided.
-                </>
-              ) : customerEmail ? (
-                <>
-                  {' '}
-                  We could not email <strong>{customerEmail}</strong> — keep your order code above for your records.
-                </>
-              ) : (
-                <> Keep your order code above for your records.</>
-              )}
+              ) : null}
             </p>
-            {emailWarning ? (
-              <p className="checkout-success-email-warning" role="status">
-                {emailWarning}
-              </p>
-            ) : null}
             {grandTotal != null ? (
               <div className="checkout-success-cod-card" role="region" aria-label="Payment summary">
                 <p className="checkout-success-cod-label">Amount due when your order arrives</p>
@@ -132,8 +108,7 @@ export default function CheckoutSuccessPage() {
               </div>
             ) : (
               <p className="checkout-shipping-note">
-                Cash on delivery: you&apos;ll pay when your order arrives. Check your email for the full total and line
-                items.
+                Cash on delivery: you&apos;ll pay when your order arrives.
               </p>
             )}
             <p className="checkout-success-outro">

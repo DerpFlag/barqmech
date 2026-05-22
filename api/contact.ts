@@ -1,5 +1,5 @@
 import { Resend } from 'resend'
-import { emailFormatOk, validateCustomerEmail } from './lib/validate-customer-email.mjs'
+import { validateGmailEmail } from './lib/gmail-email.mjs'
 import { escapeHtml, resolveSiteBaseUrl, emailShell } from './lib/email-brand.mjs'
 import { isPakistanMobile, telHrefFromPakistanRaw } from './lib/pakistan-phone.mjs'
 
@@ -33,11 +33,7 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Missing required fields.' })
   }
 
-  if (!emailFormatOk(email)) {
-    return res.status(400).json({ error: 'Please enter a valid email address.' })
-  }
-
-  const emailValidation = await validateCustomerEmail(email)
+  const emailValidation = validateGmailEmail(email)
   if (!emailValidation.ok) {
     return res.status(400).json({ error: emailValidation.reason })
   }
@@ -72,13 +68,18 @@ export default async function handler(req: any, res: any) {
 </tr>`
 
   try {
-    await resend.emails.send({
+    // Always notifies the store inbox (CONTACT_TO_EMAIL); the visitor's Gmail is reply-to only.
+    const sent = await resend.emails.send({
       from: resendFromEmail,
       to: contactToEmail,
       replyTo: email,
       subject: `[Website Contact] ${subject}`,
       html: emailShell('Website contact form', innerTd, siteBase),
     })
+    if (sent.error) {
+      logUpstreamError('Resend send failed', { error: sent.error })
+      return res.status(500).json({ error: 'Failed to send message. Please try again.' })
+    }
 
     return res.status(200).json({ ok: true })
   } catch (error) {
@@ -91,6 +92,6 @@ export default async function handler(req: any, res: any) {
         return res.status(429).json({ error: 'Email provider rate limit reached. Please try again shortly.' })
       }
     }
-    return res.status(500).json({ error: 'Failed to send message.' })
+    return res.status(500).json({ error: 'Failed to send message. Please try again.' })
   }
 }

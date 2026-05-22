@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import { randomInt, randomUUID } from 'node:crypto'
-import { emailFormatOk, validateCustomerEmail } from './lib/validate-customer-email.mjs'
+import { validateGmailEmail } from './lib/gmail-email.mjs'
+import { RESEND_EMAIL_FAILED_MESSAGE } from './lib/resend-email-limit.mjs'
 import { escapeHtml, resolveSiteBaseUrl, emailShell } from './lib/email-brand.mjs'
 import { isPakistanMobile } from './lib/pakistan-phone.mjs'
 
@@ -409,7 +410,7 @@ export default async function handler(req, res) {
   }
 
   const name = String(customer.name || '').trim()
-  const email = String(customer.email || '').trim()
+  let email = String(customer.email || '').trim()
   const phone = String(customer.phone || '').trim()
   const addressLine1 = String(customer.addressLine1 || '').trim()
   const city = String(customer.city || '').trim()
@@ -418,9 +419,16 @@ export default async function handler(req, res) {
   if (!name || !addressLine1) {
     return sendJson(res, 400, { error: 'Please provide your full name and street address.' })
   }
-  if (!emailFormatOk(email)) {
-    return sendJson(res, 400, { error: 'Please enter a valid email address (for example you@example.com).' })
+  const emailCheck = validateGmailEmail(email)
+  if (!emailCheck.ok) {
+    return sendJson(res, 400, { error: emailCheck.reason })
   }
+  email = emailCheck.normalized
+
+  if (!canResendReachCustomer(email, fromEmail, notifyEmail)) {
+    return sendJson(res, 400, { error: RESEND_EMAIL_FAILED_MESSAGE })
+  }
+
   if (!String(phone || '').trim()) {
     return sendJson(res, 400, { error: 'Please enter your mobile number.' })
   }
@@ -428,11 +436,6 @@ export default async function handler(req, res) {
     return sendJson(res, 400, {
       error: 'Please enter a Pakistan mobile number: 03XXXXXXXXX, +92 3XX XXXXXXX, or 0092 3XX XXXXXXX.',
     })
-  }
-
-  const emailCheck = await validateCustomerEmail(email)
-  if (!emailCheck.ok) {
-    return sendJson(res, 400, { error: emailCheck.reason })
   }
 
   const { subtotal, shipping, grand } = recomputeTotals(lines)
@@ -530,8 +533,7 @@ export default async function handler(req, res) {
     }
 
     if (!canResendReachCustomer(email, fromEmail, notifyEmail)) {
-      emailErrors.customer =
-        'Resend test sender (onboarding@resend.dev) can only email your store notify address until a domain is verified at resend.com/domains.'
+      emailErrors.customer = RESEND_EMAIL_FAILED_MESSAGE
       console.info('[place-order] Skipping customer email (test sender); notify=%s customer=%s', notifyEmail, email)
     } else {
       const toCustomer = await resend.emails.send({
@@ -552,30 +554,14 @@ export default async function handler(req, res) {
     emailErrors.customer = emailErrors.customer || (e instanceof Error ? e.message : 'Send failed')
   }
 
-  if (!customerEmailSent && !merchantEmailSent) {
-    return sendJson(res, 502, {
-      error: 'Order saved but confirmation emails could not be sent',
-      orderCode,
-      customerEmailSent: false,
-      merchantEmailSent: false,
-      emailErrors,
-    })
-  }
-
-  const resendTestMode = isResendTestSender(fromEmail) && !customerEmailSent
-  let emailWarning = null
   if (!customerEmailSent) {
-    emailWarning = resendTestMode
-      ? 'Your order is confirmed. Email confirmation to shoppers requires a verified domain in Resend — save your order code on this page.'
-      : 'We could not send a confirmation email to the address you entered. Please save your order code on this page.'
+    await supabase.from('orders').delete().eq('id', orderId)
+    return sendJson(res, 400, { error: RESEND_EMAIL_FAILED_MESSAGE })
   }
 
   return sendJson(res, 200, {
     orderCode,
-    customerEmailSent,
+    customerEmailSent: true,
     merchantEmailSent,
-    resendTestMode,
-    emailWarning,
-    emailErrors: customerEmailSent && merchantEmailSent ? undefined : emailErrors,
   })
 }

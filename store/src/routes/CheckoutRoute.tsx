@@ -9,7 +9,8 @@ import {
 } from '../data/catalog.ts'
 import { OrderDesignContactFooter, useShopContactDemo } from '../components/shopContact.tsx'
 import { getEmailFieldError, getPakistanPhoneFieldError } from '../lib/contactFormValidation.ts'
-import { verifyCustomerEmail } from '../lib/validateCustomerEmailApi.ts'
+import { isGmailValidationError } from '../lib/gmailEmail.ts'
+import { isResendDeliveryError, RESEND_EMAIL_FAILED_MESSAGE } from '../lib/resendEmailLimit.ts'
 
 
 export default function CheckoutPage() {
@@ -24,7 +25,6 @@ export default function CheckoutPage() {
   const [city, setCity] = useState('')
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [verifyingEmail, setVerifyingEmail] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [emailFieldError, setEmailFieldError] = useState<string | null>(null)
   const [phoneFieldError, setPhoneFieldError] = useState<string | null>(null)
@@ -65,17 +65,6 @@ export default function CheckoutPage() {
     setEmailFieldError(null)
     setPhoneFieldError(null)
     setSubmitting(true)
-    setVerifyingEmail(true)
-    try {
-      await verifyCustomerEmail(mail)
-    } catch (error) {
-      setSubmitting(false)
-      setVerifyingEmail(false)
-      const msg = error instanceof Error ? error.message : 'Email verification failed.'
-      setEmailFieldError(msg)
-      return
-    }
-    setVerifyingEmail(false)
     const payloadLines = lines.map((l) => ({
       mergeKey: l.mergeKey,
       productId: l.productId,
@@ -115,31 +104,20 @@ export default function CheckoutPage() {
       const data = (await res.json().catch(() => ({}))) as {
         orderCode?: string
         error?: string
-        customerEmailSent?: boolean
-        emailWarning?: string
-        resendTestMode?: boolean
       }
       if (!res.ok) {
         setSubmitting(false)
-        if (data.orderCode) {
-          clearCart()
-          navigate(`/checkout/success?code=${encodeURIComponent(data.orderCode)}`, {
-            replace: true,
-            state: {
-              customerEmail: mail,
-              grandTotal,
-              subtotal,
-              shippingTotal,
-              customerEmailSent: false,
-              emailWarning:
-                typeof data.error === 'string'
-                  ? data.error
-                  : 'Order saved but confirmation email could not be sent.',
-            },
-          })
-          return
+        const errMsg = typeof data.error === 'string' ? data.error : 'Could not place order'
+        if (isGmailValidationError(errMsg)) {
+          setEmailFieldError(errMsg)
+          setSubmitError(null)
+        } else if (isResendDeliveryError(errMsg)) {
+          setEmailFieldError(null)
+          setSubmitError(RESEND_EMAIL_FAILED_MESSAGE)
+        } else {
+          setEmailFieldError(null)
+          setSubmitError(errMsg)
         }
-        setSubmitError(typeof data.error === 'string' ? data.error : 'Could not place order')
         return
       }
       if (!data.orderCode) {
@@ -155,9 +133,6 @@ export default function CheckoutPage() {
           grandTotal,
           subtotal,
           shippingTotal,
-          customerEmailSent: data.customerEmailSent === true,
-          resendTestMode: data.resendTestMode === true,
-          emailWarning: typeof data.emailWarning === 'string' ? data.emailWarning : undefined,
         },
       })
     } catch {
@@ -324,7 +299,7 @@ export default function CheckoutPage() {
                   </p>
                 ) : null}
                 <button type="submit" className="checkout-submit-btn" disabled={submitting}>
-                  {verifyingEmail ? 'Verifying email…' : submitting ? 'Placing order…' : 'Place order'}
+                  {submitting ? 'Placing order…' : 'Place order'}
                 </button>
               </form>
             </section>
