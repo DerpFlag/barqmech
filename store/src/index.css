@@ -882,40 +882,38 @@ body.intro-playing {
   );
 }
 
-/* Black vignette on all sides of the intro video (same tone as hero-below-fade). */
+/* Thin black vignette on intro video edges (pixel stops — avoids covering the frame). */
 .hero-edge-fade {
   position: absolute;
   inset: 0;
   z-index: 2;
   pointer-events: none;
+  --hero-edge-y: clamp(18px, 3.5vh, 42px);
+  --hero-edge-x: clamp(14px, 3vw, 36px);
   background:
     linear-gradient(
       180deg,
-      #000000 0%,
-      rgba(0, 0, 0, 0.82) 28%,
-      rgba(0, 0, 0, 0.42) 52%,
-      rgba(0, 0, 0, 0) clamp(56px, 12vh, 132px)
+      #000000 0,
+      rgba(0, 0, 0, 0.72) calc(var(--hero-edge-y) * 0.45),
+      rgba(0, 0, 0, 0) var(--hero-edge-y)
     ),
     linear-gradient(
       0deg,
-      #000000 0%,
-      rgba(0, 0, 0, 0.82) 28%,
-      rgba(0, 0, 0, 0.42) 52%,
-      rgba(0, 0, 0, 0) clamp(56px, 12vh, 132px)
+      #000000 0,
+      rgba(0, 0, 0, 0.72) calc(var(--hero-edge-y) * 0.45),
+      rgba(0, 0, 0, 0) var(--hero-edge-y)
     ),
     linear-gradient(
       90deg,
-      #000000 0%,
-      rgba(0, 0, 0, 0.82) 30%,
-      rgba(0, 0, 0, 0.42) 55%,
-      rgba(0, 0, 0, 0) clamp(44px, 10vw, 108px)
+      #000000 0,
+      rgba(0, 0, 0, 0.68) calc(var(--hero-edge-x) * 0.45),
+      rgba(0, 0, 0, 0) var(--hero-edge-x)
     ),
     linear-gradient(
       270deg,
-      #000000 0%,
-      rgba(0, 0, 0, 0.82) 30%,
-      rgba(0, 0, 0, 0.42) 55%,
-      rgba(0, 0, 0, 0) clamp(44px, 10vw, 108px)
+      #000000 0,
+      rgba(0, 0, 0, 0.68) calc(var(--hero-edge-x) * 0.45),
+      rgba(0, 0, 0, 0) var(--hero-edge-x)
     );
 }
 
