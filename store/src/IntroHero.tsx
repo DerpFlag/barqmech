@@ -169,6 +169,7 @@ export function IntroHero({
 
     const layoutFrame = (sourceW: number, sourceH: number) => {
       const isMobile = window.innerWidth <= 920
+      const isLandscapeMobile = isMobile && window.innerHeight <= 520
       const containScale = Math.min(canvasWidth / sourceW, canvasHeight / sourceH)
       const coverScale = Math.max(canvasWidth / sourceW, canvasHeight / sourceH)
       const minVisibleFraction = 0.6
@@ -176,7 +177,11 @@ export function IntroHero({
         canvasWidth / (sourceW * minVisibleFraction),
         canvasHeight / (sourceH * minVisibleFraction),
       )
-      const scale = isMobile ? Math.min(coverScale, maxAllowedScale) : containScale
+      const scale = !isMobile
+        ? containScale
+        : isLandscapeMobile
+          ? containScale
+          : Math.min(coverScale, maxAllowedScale)
       const drawW = Math.round(sourceW * scale)
       const drawH = Math.round(sourceH * scale)
       const x = Math.round((canvasWidth - drawW) / 2)
