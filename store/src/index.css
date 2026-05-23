@@ -2107,27 +2107,25 @@ body.intro-playing {
   gap: 0.65rem;
 }
 
-.price-filter-card-header {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.price-filter-range-hint {
-  margin: 0;
-  color: #94a3b8;
-  font-size: 0.78rem;
-}
-
 .price-filter-selection {
   margin: 0;
   color: #c8d6f0;
-  font-size: 0.84rem;
-  line-height: 1.45;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.price-filter-selection-label,
+.price-filter-selection-sep {
+  white-space: nowrap;
 }
 
 .price-filter-selection strong {
   color: #eef3ff;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .price-filter-custom {

@@ -56,15 +56,16 @@ export function PriceRangeFilter({
 
   return (
     <div className="price-filter-card">
-      <div className="price-filter-card-header">
-        <h4>Price filter</h4>
-        <p className="price-filter-range-hint">
-          Rs. {PRICE_FILTER_MIN.toLocaleString()} – {PRICE_FILTER_MAX.toLocaleString()}
-        </p>
-      </div>
+      <h4>Price filter</h4>
 
       <p className="price-filter-selection">
-        Selected: <strong>Rs. {draftMin.toLocaleString()}</strong> – <strong>Rs. {draftMax.toLocaleString()}</strong>
+        <span className="price-filter-selection-label">Selected:</span>{' '}
+        <strong>Rs. {draftMin.toLocaleString()}</strong>
+        <span className="price-filter-selection-sep" aria-hidden>
+          {' '}
+          –{' '}
+        </span>
+        <strong>Rs. {draftMax.toLocaleString()}</strong>
       </p>
 
       <div className="price-range-dual">
