@@ -31,6 +31,8 @@ function HomePage() {
   const products = useCatalogProducts()
   const navigate = useNavigate()
   const [introDone, setIntroDone] = useState(false)
+  /** True ~1s before trimmed video end — mount chrome while video still plays. */
+  const [introLeadReveal, setIntroLeadReveal] = useState(false)
   /** Carousel / resize effects only after intro video finishes. */
   const homeEffectsReady = introDone
 
@@ -49,6 +51,11 @@ function HomePage() {
   const [retailCarouselInView, setRetailCarouselInView] = useState(false)
   const carouselEngaged = homeEffectsReady && retailCarouselInView
 
+  const handleLeadReveal = useCallback(() => {
+    setIntroLeadReveal(true)
+    window.setTimeout(() => setUiVisible(true), 100)
+  }, [])
+
   const handleIntroEnded = useCallback(() => {
     setIntroDone(true)
     document.body.classList.remove('intro-playing')
@@ -56,7 +63,7 @@ function HomePage() {
 
   useEffect(() => {
     if (!introDone) return
-    const fadeTick = window.setTimeout(() => setUiVisible(true), 100)
+    const fadeTick = window.setTimeout(() => setUiVisible((v) => v || true), 100)
     return () => window.clearTimeout(fadeTick)
   }, [introDone])
 
@@ -189,7 +196,7 @@ function HomePage() {
 
   return (
     <>
-      {introDone && (
+      {introLeadReveal && (
         <header className={`topbar ${uiVisible ? 'visible' : ''}`}>
           <div className="topbar-inner">
             <button type="button" className="brand-logo-btn" onClick={() => scrollToSection('home')}>
@@ -220,11 +227,12 @@ function HomePage() {
         videoSrc={introVideoUrl}
         introDone={introDone}
         onIntroEnded={handleIntroEnded}
+        onLeadReveal={handleLeadReveal}
         playbackRate={1.5}
-        revealLeadSeconds={2}
-        endTrimSeconds={1.8}
+        revealLeadSeconds={1}
+        endTrimSeconds={1.5}
       >
-        <div className={`video-overlay ${introDone ? 'visible' : ''}`}>
+        <div className={`video-overlay ${introLeadReveal ? 'visible' : ''}`}>
           <p className="overlay-copy overlay-left">Waves of change with<br /><span className="overlay-brand-chrome">BARQMECH</span></p>
           <div className="overlay-right">
             <p className="overlay-copy overlay-right-message">Explore our range of<br />crafted metal and<br />architectural products<br /></p>
@@ -235,7 +243,7 @@ function HomePage() {
 
       <div className="hero-below-fade" aria-hidden />
 
-      {introDone && (
+      {introLeadReveal && (
         <section className={`mobile-copy ${uiVisible ? 'visible' : ''}`}>
           <p className="mobile-line mobile-line-headline">
             Waves of change with<br />
@@ -248,7 +256,7 @@ function HomePage() {
         </section>
       )}
 
-      {introDone && (
+      {introLeadReveal && (
         <main className={`site-content ${uiVisible ? 'visible' : ''}`}>
           <section className="categories-section" id="collections"><div className="section-head"><h2>Product Categories</h2><p>Browse our core metal cutting capabilities below.</p></div></section>
           <div ref={retailCarouselRootRef} className="home-retail-carousel-root">

@@ -11,11 +11,11 @@ Summary of how the storefront home intro (`Media/Final Video.mp4`) is played and
 | Setting | Value | Effect |
 |--------|--------|--------|
 | `playbackRate` | `1.5` | Plays 50% faster than real time. |
-| `endTrimSeconds` | `1.8` | Intro ends **1.8 seconds before** the file’s real end (tail trimmed). |
-| `revealLeadSeconds` | `2` | Passed to `IntroHero` but **`onLeadReveal` is not used** — nothing on the page reacts early; only trim + end drive “done.” |
+| `endTrimSeconds` | `1.5` | Intro ends **1.5 seconds before** the file’s real end (tail trimmed). |
+| `revealLeadSeconds` | `1` | Fires `onLeadReveal` **~1 second before** the trimmed end so page chrome can fade in while the video still plays. |
 | Safety timeout | `22s` | If the video never finishes (error, stall), intro still ends. |
 
-**Felt length (approx.):** `(file duration − 1.8s) ÷ 1.5` in wall-clock seconds.
+**Felt length (approx.):** `(file duration − 1.5s) ÷ 1.5` in wall-clock seconds.
 
 Muted, no loop, `playsInline` for mobile autoplay.
 
@@ -36,15 +36,17 @@ Overlay copy position tracks the drawn video via `--panel-left-center` / `--pane
 
 ## During intro
 
-- `body.intro-playing` — page scroll locked.
-- Top bar, main content, and carousels **do not mount** until the video finishes.
-- Hexagon background pointer effects are paused.
+- `body.intro-playing` — page scroll locked until the trimmed end.
+- **~1s before** trimmed end: top bar, hero overlay, mobile copy, and `<main>` mount and begin CSS fades (~100ms delay, then ~0.7–0.9s transitions).
+- Carousel timers and resize-driven featured blocks wait until **`introDone`** (video fully finished).
+
+Hexagon background pointer effects are paused while `intro-playing` is set.
 
 ---
 
 ## After intro
 
-Video pauses; `introDone` becomes true. Overlay, top bar, mobile copy (narrow screens), and `<main>` appear. About **100ms** later, coordinated CSS fades:
+Video pauses at the trimmed end; `introDone` becomes true; `intro-playing` is removed from `body`.
 
 | Element | Transition |
 |---------|------------|
@@ -57,20 +59,14 @@ Video pauses; `introDone` becomes true. Overlay, top bar, mobile copy (narrow sc
 
 ---
 
-## Not used (stutter fix)
-
-Early UI reveal **~2 seconds before** the trimmed end (`onLeadReveal`) was removed so heavy DOM does not mount during playback.
-
----
-
 ## Tweaking
 
 In `App.tsx` on `<IntroHero>`:
 
 ```tsx
 playbackRate={1.5}
-revealLeadSeconds={2}
-endTrimSeconds={1.8}
+revealLeadSeconds={1}
+endTrimSeconds={1.5}
 ```
 
 Rebuild and redeploy the store after changing props.
