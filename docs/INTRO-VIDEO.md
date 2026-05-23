@@ -56,6 +56,8 @@ Video pauses at the trimmed end; `introDone` becomes true; `intro-playing` is re
 | Main content | Opacity + slide up, ~0.8s |
 | Mobile copy block | ~0.75s (overlay hidden on mobile) |
 
+`hero-edge-fade` — black vignette on all four sides of the video (edges → transparent toward center).
+
 `hero-below-fade` — gradient under the hero (black → transparent) into the page below.
 
 ---

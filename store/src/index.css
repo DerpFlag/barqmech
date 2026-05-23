@@ -882,6 +882,43 @@ body.intro-playing {
   );
 }
 
+/* Black vignette on all sides of the intro video (same tone as hero-below-fade). */
+.hero-edge-fade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      #000000 0%,
+      rgba(0, 0, 0, 0.82) 28%,
+      rgba(0, 0, 0, 0.42) 52%,
+      rgba(0, 0, 0, 0) clamp(56px, 12vh, 132px)
+    ),
+    linear-gradient(
+      0deg,
+      #000000 0%,
+      rgba(0, 0, 0, 0.82) 28%,
+      rgba(0, 0, 0, 0.42) 52%,
+      rgba(0, 0, 0, 0) clamp(56px, 12vh, 132px)
+    ),
+    linear-gradient(
+      90deg,
+      #000000 0%,
+      rgba(0, 0, 0, 0.82) 30%,
+      rgba(0, 0, 0, 0.42) 55%,
+      rgba(0, 0, 0, 0) clamp(44px, 10vw, 108px)
+    ),
+    linear-gradient(
+      270deg,
+      #000000 0%,
+      rgba(0, 0, 0, 0.82) 30%,
+      rgba(0, 0, 0, 0.42) 55%,
+      rgba(0, 0, 0, 0) clamp(44px, 10vw, 108px)
+    );
+}
+
 .hero-canvas {
   position: absolute;
   inset: 0;
@@ -3303,7 +3340,8 @@ body.intro-playing {
     );
   }
 
-  .hero-canvas {
+  .hero-canvas,
+  .hero-edge-fade {
     border-radius: 10px;
   }
 

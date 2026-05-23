@@ -311,6 +311,7 @@ export function IntroHero({
   return (
     <section className="hero-wrap" ref={heroRef} id="home">
       <canvas ref={heroCanvasRef} className="hero-canvas" aria-hidden />
+      <div className="hero-edge-fade" aria-hidden />
       <video
         ref={videoRef}
         className="hero-video"
