@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, startTransition, type FormEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { lazy, Suspense } from 'react'
 import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -31,14 +31,9 @@ function HomePage() {
   const products = useCatalogProducts()
   const navigate = useNavigate()
   const [introDone, setIntroDone] = useState(false)
-  /** True ~2s before the intro video ends — mount chrome + start fades while video still plays. */
-  const [introLeadReveal, setIntroLeadReveal] = useState(false)
-  /** Mount heavy `<main>` after the first post-reveal paint so layout does not hitch the intro canvas. */
-  const [deferredMainReady, setDeferredMainReady] = useState(false)
-  /** Carousel / resize effects only when `<main>` is mounted (or intro fully ended). */
-  const homeEffectsReady = introDone || (introLeadReveal && deferredMainReady)
+  /** Carousel / resize effects only after intro video finishes. */
+  const homeEffectsReady = introDone
 
-  const [heroCopyVisible, setHeroCopyVisible] = useState(false)
   const [uiVisible, setUiVisible] = useState(false)
   const [demoPromptOpen, setDemoPromptOpen] = useState(false)
   const [demoEmail, setDemoEmail] = useState('')
@@ -54,38 +49,15 @@ function HomePage() {
   const [retailCarouselInView, setRetailCarouselInView] = useState(false)
   const carouselEngaged = homeEffectsReady && retailCarouselInView
 
-  const scheduleDeferredMainPaint = useCallback(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        startTransition(() => {
-          setDeferredMainReady(true)
-        })
-      })
-    })
+  const handleIntroEnded = useCallback(() => {
+    setIntroDone(true)
+    document.body.classList.remove('intro-playing')
   }, [])
 
-  const handleIntroEnded = useCallback(() => setIntroDone(true), [])
-  const handleLeadReveal = useCallback(() => {
-    setIntroLeadReveal(true)
-    setHeroCopyVisible(true)
-    document.body.classList.remove('intro-playing')
-    window.setTimeout(() => setUiVisible(true), 100)
-    scheduleDeferredMainPaint()
-  }, [scheduleDeferredMainPaint])
-
-  useEffect(() => {
-    if (introDone) setDeferredMainReady(true)
-  }, [introDone])
-
-  /** After the video ends: ensure overlay + page chrome are visible (lead reveal usually did this earlier). */
   useEffect(() => {
     if (!introDone) return
-    const firstTick = window.setTimeout(() => setHeroCopyVisible((v) => v || true), 40)
-    const secondTick = window.setTimeout(() => setUiVisible((v) => v || true), 120)
-    return () => {
-      window.clearTimeout(firstTick)
-      window.clearTimeout(secondTick)
-    }
+    const fadeTick = window.setTimeout(() => setUiVisible(true), 100)
+    return () => window.clearTimeout(fadeTick)
   }, [introDone])
 
   useEffect(() => {
@@ -217,7 +189,7 @@ function HomePage() {
 
   return (
     <>
-      {(introLeadReveal || introDone) && (
+      {introDone && (
         <header className={`topbar ${uiVisible ? 'visible' : ''}`}>
           <div className="topbar-inner">
             <button type="button" className="brand-logo-btn" onClick={() => scrollToSection('home')}>
@@ -248,12 +220,11 @@ function HomePage() {
         videoSrc={introVideoUrl}
         introDone={introDone}
         onIntroEnded={handleIntroEnded}
-        onLeadReveal={handleLeadReveal}
         playbackRate={1.5}
         revealLeadSeconds={2}
         endTrimSeconds={1.5}
       >
-        <div className={`video-overlay ${heroCopyVisible ? 'visible' : ''}`}>
+        <div className={`video-overlay ${introDone ? 'visible' : ''}`}>
           <p className="overlay-copy overlay-left">Waves of change with<br /><span className="overlay-brand-chrome">BARQMECH</span></p>
           <div className="overlay-right">
             <p className="overlay-copy overlay-right-message">Explore our range of<br />crafted metal and<br />architectural products<br /></p>
@@ -264,7 +235,7 @@ function HomePage() {
 
       <div className="hero-below-fade" aria-hidden />
 
-      {(introDone || (introLeadReveal && deferredMainReady)) && (
+      {introDone && (
         <section className={`mobile-copy ${uiVisible ? 'visible' : ''}`}>
           <p className="mobile-line mobile-line-headline">
             Waves of change with<br />
@@ -277,7 +248,7 @@ function HomePage() {
         </section>
       )}
 
-      {(introDone || (introLeadReveal && deferredMainReady)) && (
+      {introDone && (
         <main className={`site-content ${uiVisible ? 'visible' : ''}`}>
           <section className="categories-section" id="collections"><div className="section-head"><h2>Product Categories</h2><p>Browse our core metal cutting capabilities below.</p></div></section>
           <div ref={retailCarouselRootRef} className="home-retail-carousel-root">
