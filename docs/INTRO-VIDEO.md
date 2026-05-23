@@ -12,7 +12,7 @@ Summary of how the storefront home intro (`Media/Final Video.mp4`) is played and
 |--------|--------|--------|
 | `playbackRate` | `1.5` | Plays 50% faster than real time. |
 | `endTrimSeconds` | `1.5` | Intro ends **1.5 seconds before** the file’s real end (tail trimmed). |
-| `revealLeadSeconds` | `1` | Fires `onLeadReveal` **~1 second before** the trimmed end so page chrome can fade in while the video still plays. |
+| `revealLeadSeconds` | `2` | Fires `onLeadReveal` **~2 seconds before** the trimmed end for light UI (nav, overlay copy). |
 | Safety timeout | `22s` | If the video never finishes (error, stall), intro still ends. |
 
 **Felt length (approx.):** `(file duration − 1.5s) ÷ 1.5` in wall-clock seconds.
@@ -37,8 +37,9 @@ Overlay copy position tracks the drawn video via `--panel-left-center` / `--pane
 ## During intro
 
 - `body.intro-playing` — page scroll locked until the trimmed end.
-- **~1s before** trimmed end: top bar, hero overlay, mobile copy, and `<main>` mount and begin CSS fades (~100ms delay, then ~0.7–0.9s transitions).
-- Carousel timers and resize-driven featured blocks wait until **`introDone`** (video fully finished).
+- **~2s before** trimmed end: light chrome — top bar, hero overlay, mobile copy (~100ms delay, then CSS fades).
+- **When the video ends:** `<main>` (categories, mosaics, featured carousels, contact) mounts and fades in.
+- Carousel timers and resize-driven featured blocks wait until **`introDone`**.
 
 Hexagon background pointer effects are paused while `intro-playing` is set.
 
@@ -46,7 +47,7 @@ Hexagon background pointer effects are paused while `intro-playing` is set.
 
 ## After intro
 
-Video pauses at the trimmed end; `introDone` becomes true; `intro-playing` is removed from `body`.
+Video pauses at the trimmed end; `introDone` becomes true; `intro-playing` is removed from `body`. Heavy page content (`<main>`) mounts then.
 
 | Element | Transition |
 |---------|------------|
@@ -65,7 +66,7 @@ In `App.tsx` on `<IntroHero>`:
 
 ```tsx
 playbackRate={1.5}
-revealLeadSeconds={1}
+revealLeadSeconds={2}
 endTrimSeconds={1.5}
 ```
 

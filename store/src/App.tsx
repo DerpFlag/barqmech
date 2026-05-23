@@ -31,12 +31,13 @@ function HomePage() {
   const products = useCatalogProducts()
   const navigate = useNavigate()
   const [introDone, setIntroDone] = useState(false)
-  /** True ~1s before trimmed video end — mount chrome while video still plays. */
+  /** True ~2s before trimmed video end — light chrome (top bar, overlay copy). */
   const [introLeadReveal, setIntroLeadReveal] = useState(false)
   /** Carousel / resize effects only after intro video finishes. */
   const homeEffectsReady = introDone
 
-  const [uiVisible, setUiVisible] = useState(false)
+  const [chromeVisible, setChromeVisible] = useState(false)
+  const [mainVisible, setMainVisible] = useState(false)
   const [demoPromptOpen, setDemoPromptOpen] = useState(false)
   const [demoEmail, setDemoEmail] = useState('')
   const [demoStatus, setDemoStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -53,7 +54,7 @@ function HomePage() {
 
   const handleLeadReveal = useCallback(() => {
     setIntroLeadReveal(true)
-    window.setTimeout(() => setUiVisible(true), 100)
+    window.setTimeout(() => setChromeVisible(true), 100)
   }, [])
 
   const handleIntroEnded = useCallback(() => {
@@ -63,7 +64,7 @@ function HomePage() {
 
   useEffect(() => {
     if (!introDone) return
-    const fadeTick = window.setTimeout(() => setUiVisible((v) => v || true), 100)
+    const fadeTick = window.setTimeout(() => setMainVisible(true), 100)
     return () => window.clearTimeout(fadeTick)
   }, [introDone])
 
@@ -197,7 +198,7 @@ function HomePage() {
   return (
     <>
       {introLeadReveal && (
-        <header className={`topbar ${uiVisible ? 'visible' : ''}`}>
+        <header className={`topbar ${chromeVisible ? 'visible' : ''}`}>
           <div className="topbar-inner">
             <button type="button" className="brand-logo-btn" onClick={() => scrollToSection('home')}>
               <img
@@ -229,7 +230,7 @@ function HomePage() {
         onIntroEnded={handleIntroEnded}
         onLeadReveal={handleLeadReveal}
         playbackRate={1.5}
-        revealLeadSeconds={1}
+        revealLeadSeconds={2}
         endTrimSeconds={1.5}
       >
         <div className={`video-overlay ${introLeadReveal ? 'visible' : ''}`}>
@@ -244,7 +245,7 @@ function HomePage() {
       <div className="hero-below-fade" aria-hidden />
 
       {introLeadReveal && (
-        <section className={`mobile-copy ${uiVisible ? 'visible' : ''}`}>
+        <section className={`mobile-copy ${chromeVisible ? 'visible' : ''}`}>
           <p className="mobile-line mobile-line-headline">
             Waves of change with<br />
             <span className="overlay-brand-chrome">BARQMECH</span>
@@ -256,8 +257,8 @@ function HomePage() {
         </section>
       )}
 
-      {introLeadReveal && (
-        <main className={`site-content ${uiVisible ? 'visible' : ''}`}>
+      {introDone && (
+        <main className={`site-content ${mainVisible ? 'visible' : ''}`}>
           <section className="categories-section" id="collections"><div className="section-head"><h2>Product Categories</h2><p>Browse our core metal cutting capabilities below.</p></div></section>
           <div ref={retailCarouselRootRef} className="home-retail-carousel-root">
           <section className="mosaic-section" aria-label="Category image gallery"><div className="mosaic-grid">{galleryTiles.map((tile) => {const targetCategory = galleryTileRouteCategory[tile.id]; return <article key={tile.id} className={`mosaic-tile ${tile.className}`}><RotatingImageStack urls={tile.images} alt={tile.title} stackClassName="mosaic-image-stack" imageClassName="mosaic-image" rotate={carouselEngaged} intervalMs={tile.intervalMs} /><div className="mosaic-overlay"><h3>{tile.title}</h3><Link to={`/products?category=${categorySlugs[targetCategory]}`} className="mosaic-discover-btn">Discover</Link></div></article>})}</div></section>
