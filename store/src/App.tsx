@@ -16,10 +16,12 @@ import { RotatingImageStack } from './catalog/RotatingImageStack.tsx'
 import { IntroHero } from './IntroHero.tsx'
 import { HexagonBackground } from './HexagonBackground.tsx'
 import { CartProvider, TopbarCartButton } from './cart/CartContext.tsx'
+import { ProductSearch } from './components/ProductSearch.tsx'
 import { getEmailFieldError, getPakistanPhoneFieldError } from './lib/contactFormValidation.ts'
 import { isGmailValidationError } from './lib/gmailEmail.ts'
 
 const ProductsPage = lazy(() => import('./routes/ProductsRoute.tsx'))
+const ProductsSearchPage = lazy(() => import('./routes/ProductsSearchRoute.tsx'))
 const ProductPage = lazy(() => import('./routes/ProductRoute.tsx'))
 const CheckoutPage = lazy(() => import('./routes/CheckoutRoute.tsx'))
 const CheckoutSuccessPage = lazy(() => import('./routes/CheckoutSuccessRoute.tsx'))
@@ -38,7 +40,6 @@ function HomePage() {
 
   const [heroCopyVisible, setHeroCopyVisible] = useState(false)
   const [uiVisible, setUiVisible] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
   const [demoPromptOpen, setDemoPromptOpen] = useState(false)
   const [demoEmail, setDemoEmail] = useState('')
   const [demoStatus, setDemoStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -142,11 +143,6 @@ function HomePage() {
     setFeaturedIndexes((prev) => ({ ...prev, [category]: (prev[category] + 1) % Math.max(categoryItems.length, 1) }))
   }
 
-  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    scrollToSection('shop')
-  }
-
   const openCalendly = () => {
     const normalized = demoEmail.trim()
     const emailErr = getEmailFieldError(normalized)
@@ -237,10 +233,7 @@ function HomePage() {
               />
               <span className="brand-title">BARQMECH</span>
             </button>
-            <form className="topbar-search" role="search" onSubmit={handleSearchSubmit}>
-              <input type="search" name="q" className="topbar-search-input" placeholder="Search products…" autoComplete="off" aria-label="Search products" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              <span className="topbar-search-icon" aria-hidden><svg viewBox="0 0 24 24" className="nav-icon-svg"><path d="M10.5 3a7.5 7.5 0 0 1 5.95 12.08l4.24 4.24-1.42 1.42-4.24-4.24A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z" /></svg></span>
-            </form>
+            <ProductSearch />
             <nav className="topbar-actions" aria-label="Primary">
               <button type="button" className="topbar-nav-link" onClick={goToProducts}><span className="nav-icon" aria-hidden><svg viewBox="0 0 24 24" className="nav-icon-svg"><path d="M7 8V7a5 5 0 0 1 10 0v1h3v13H4V8h3zm2 0h6V7a3 3 0 0 0-6 0v1zm-3 2v9h12v-9H6z" /></svg></span><span className="nav-label">Shop</span></button>
               <button type="button" className="topbar-nav-link" onClick={() => scrollToSection('order-design')}><span className="nav-icon" aria-hidden><svg viewBox="0 0 24 24" className="nav-icon-svg"><path d="M3 6h18v12H3V6zm2 2v.35L12 12.8l7-4.45V8H5zm14 8v-5.3l-7 4.45-7-4.45V16h14z" /></svg></span><span className="nav-label">Contact</span></button>
@@ -444,6 +437,14 @@ export default function App() {
           element={
             <Suspense fallback={<RouteFallback />}>
               <ProductsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/products/search"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <ProductsSearchPage />
             </Suspense>
           }
         />

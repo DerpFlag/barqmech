@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { finalLogoUrl, formatPriceNoDecimals } from '../data/catalog.ts'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { formatPriceNoDecimals } from '../data/catalog.ts'
+import { ShopTopbar } from '../components/ShopTopbar.tsx'
 
 
 export type CheckoutSuccessState = {
@@ -11,7 +11,6 @@ export type CheckoutSuccessState = {
 }
 
 export default function CheckoutSuccessPage() {
-  const navigate = useNavigate()
   const [params] = useSearchParams()
   const location = useLocation()
   const code = params.get('code')?.trim() ?? ''
@@ -26,46 +25,11 @@ export default function CheckoutSuccessPage() {
     typeof successState.shippingTotal === 'number' && Number.isFinite(successState.shippingTotal)
       ? successState.shippingTotal
       : null
-  const [searchQuery, setSearchQuery] = useState('')
   const validCode = /^\d{6}$/.test(code)
 
   return (
     <>
-      <header className="topbar visible">
-        <div className="topbar-inner">
-          <Link to="/" className="brand-logo-btn">
-            <img src={finalLogoUrl} alt="BarqMech" className="brand-logo-img" width={240} height={72} decoding="async" fetchPriority="high" />
-            <span className="brand-title">BARQMECH</span>
-          </Link>
-          <form className="topbar-search" role="search" onSubmit={(e) => e.preventDefault()}>
-            <input
-              type="search"
-              name="q"
-              className="topbar-search-input"
-              placeholder="Search products..."
-              autoComplete="off"
-              aria-label="Search products"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <span className="topbar-search-icon" aria-hidden>
-              <svg viewBox="0 0 24 24" className="nav-icon-svg">
-                <path d="M10.5 3a7.5 7.5 0 0 1 5.95 12.08l4.24 4.24-1.42 1.42-4.24-4.24A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z" />
-              </svg>
-            </span>
-          </form>
-          <nav className="topbar-actions" aria-label="Primary">
-            <button type="button" className="topbar-nav-link" onClick={() => navigate('/products')}>
-              <span className="nav-icon" aria-hidden>
-                <svg viewBox="0 0 24 24" className="nav-icon-svg">
-                  <path d="M7 8V7a5 5 0 0 1 10 0v1h3v13H4V8h3zm2 0h6V7a3 3 0 0 0-6 0v1zm-3 2v9h12v-9H6z" />
-                </svg>
-              </span>
-              <span className="nav-label">Shop</span>
-            </button>
-          </nav>
-        </div>
-      </header>
+      <ShopTopbar showContact={false} showAccount={false} />
       <main className="shop-route-page products-page checkout-page">
         <div className="products-crumb-row">
           <p className="products-crumb">

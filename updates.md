@@ -4,6 +4,24 @@ Chronological notes for agents and humans. Append new entries at the **top**.
 
 ---
 
+## 2026-05-22 — Product search typeahead + full results page
+
+**Fix:** Topbar search matches site styling; live filter by product title; dropdown shows 5 hits + “Show more”; `/products/search?q=…` with breadcrumb Home / Products / Search.
+
+**Files:** `ProductSearch.tsx`, `ShopTopbar.tsx`, `searchProducts.ts`, `ProductsSearchRoute.tsx`; shared topbar on shop routes.
+
+---
+
+## 2026-05-22 — Living domain / email launch plan
+
+**Problem:** Rollout steps (Vercel domain, cPanel DNS, Zoho Mail, Resend verify, env vars) lived only in chat.
+
+**Fix:** Added [`docs/BARQMECH-COM-SETUP.md`](docs/BARQMECH-COM-SETUP.md) with phased checklists, DNS/env tables, test matrix, and session log. Linked from README.
+
+**Follow-up:** Execute phases 0–4; check boxes and append session log + DNS table rows as each step completes.
+
+---
+
 ## 2026-05-15 — Catalog pricing diagnostics + embed/fallback loader
 
 **From `Media/html.txt`:** PDP `[Islamic] 3 Quls Square` showed empty size pills, `Rs. 0`, old `product-detail-hero-track` (stale JS). DB has 1 variant / 3 sizes for `islamic-3-quls-square`.

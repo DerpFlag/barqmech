@@ -11,15 +11,14 @@ import {
 import { RotatingImageStack } from '../catalog/RotatingImageStack.tsx'
 import { CatalogPricingAlert } from '../catalog/CatalogPricingAlert.tsx'
 import { useCatalog } from '../catalog/CatalogProvider.tsx'
-import { TopbarCartButton } from '../cart/CartContext.tsx'
 import { OrderDesignContactFooter, useShopContactDemo } from '../components/shopContact.tsx'
+import { ShopTopbar } from '../components/ShopTopbar.tsx'
 
 
 export default function ProductsPage() {
   const { products, loading: catalogLoading, error: catalogError, diagnostics, buildId, refetch } = useCatalog()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<'All' | FeaturedCategory>(() => {
     const slug = searchParams.get('category')
     return (slug && slugToCategory[slug]) || 'All'
@@ -64,29 +63,9 @@ export default function ProductsPage() {
     setShowMobilePriceFilter(false)
   }
 
-  const scrollToSection = (id: string) =>
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-
   return (
     <>
-      <header className="topbar visible">
-        <div className="topbar-inner">
-          <Link to="/" className="brand-logo-btn">
-            <img src={finalLogoUrl} alt="BarqMech" className="brand-logo-img" width={240} height={72} decoding="async" fetchPriority="high" />
-            <span className="brand-title">BARQMECH</span>
-          </Link>
-          <form className="topbar-search" role="search" onSubmit={(e) => e.preventDefault()}>
-            <input type="search" name="q" className="topbar-search-input" placeholder="Search products..." autoComplete="off" aria-label="Search products" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-            <span className="topbar-search-icon" aria-hidden><svg viewBox="0 0 24 24" className="nav-icon-svg"><path d="M10.5 3a7.5 7.5 0 0 1 5.95 12.08l4.24 4.24-1.42 1.42-4.24-4.24A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z" /></svg></span>
-          </form>
-          <nav className="topbar-actions" aria-label="Primary">
-            <button type="button" className="topbar-nav-link" onClick={() => navigate('/products')}><span className="nav-icon" aria-hidden><svg viewBox="0 0 24 24" className="nav-icon-svg"><path d="M7 8V7a5 5 0 0 1 10 0v1h3v13H4V8h3zm2 0h6V7a3 3 0 0 0-6 0v1zm-3 2v9h12v-9H6z" /></svg></span><span className="nav-label">Shop</span></button>
-            <button type="button" className="topbar-nav-link" onClick={() => scrollToSection('order-design')}><span className="nav-icon" aria-hidden><svg viewBox="0 0 24 24" className="nav-icon-svg"><path d="M3 6h18v12H3V6zm2 2v.35L12 12.8l7-4.45V8H5zm14 8v-5.3l-7 4.45-7-4.45V16h14z" /></svg></span><span className="nav-label">Contact</span></button>
-            <button type="button" className="topbar-nav-link" aria-label="Account"><span className="nav-icon" aria-hidden><svg viewBox="0 0 24 24" className="nav-icon-svg"><path d="M12 3a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 12c4.42 0 8 2.01 8 4.5V21H4v-1.5C4 17.01 7.58 15 12 15z" /></svg></span><span className="nav-label">Account</span></button>
-            <TopbarCartButton />
-          </nav>
-        </div>
-      </header>
+      <ShopTopbar contactSectionId="order-design" showContact />
 
       <main className="shop-route-page products-page">
         <div className="products-crumb-row">
