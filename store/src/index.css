@@ -441,6 +441,21 @@ body.intro-playing {
   padding: 0.5rem 0.75rem;
 }
 
+.product-search-dropdown--fixed {
+  right: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.product-search-dropdown--fixed .product-search-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .products-search-page .products-search-header {
   margin-bottom: 1rem;
 }
@@ -3301,8 +3316,8 @@ body.intro-playing {
     grid-template-columns: 1fr;
     justify-items: center;
     width: min(700px, 92vw);
-    margin: 0 auto;
-    padding: 2.3rem 0;
+    margin: clamp(-2.25rem, -7vh, -1.25rem) auto 0;
+    padding: 0.85rem 0 2rem;
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.75s ease, transform 0.75s ease;
@@ -3429,6 +3444,20 @@ body.intro-playing {
 
   .brand-logo-btn {
     margin-right: 0.28rem;
+  }
+
+  .topbar {
+    overflow: visible;
+    z-index: 40;
+  }
+
+  .topbar-inner {
+    overflow: visible;
+  }
+
+  .product-search {
+    overflow: visible;
+    z-index: 200;
   }
 
   .topbar-search {
