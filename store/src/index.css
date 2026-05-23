@@ -857,6 +857,10 @@ body.intro-playing {
 .hero-wrap {
   --panel-left-center: 14%;
   --panel-right-center: 86%;
+  --hero-vid-top: 0%;
+  --hero-vid-left: 0%;
+  --hero-vid-right: 0%;
+  --hero-vid-bottom: 0%;
   position: relative;
   min-height: 100svh;
   display: grid;
@@ -882,7 +886,7 @@ body.intro-playing {
   );
 }
 
-/* Thin black vignette on intro video edges (pixel stops — avoids covering the frame). */
+/* Thin black vignette on the drawn video rect (bounds synced from IntroHero canvas layout). */
 .hero-edge-fade {
   position: absolute;
   inset: 0;
@@ -890,6 +894,16 @@ body.intro-playing {
   pointer-events: none;
   --hero-edge-y: clamp(18px, 3.5vh, 42px);
   --hero-edge-x: clamp(14px, 3vw, 36px);
+}
+
+.hero-edge-fade::before {
+  content: '';
+  position: absolute;
+  top: var(--hero-vid-top);
+  left: var(--hero-vid-left);
+  right: var(--hero-vid-right);
+  bottom: var(--hero-vid-bottom);
+  pointer-events: none;
   background:
     linear-gradient(
       180deg,
@@ -3325,6 +3339,7 @@ body.intro-playing {
     height: 62svh;
     place-items: start center;
     padding-inline: clamp(0.4rem, 2.8vw, 0.9rem);
+    border-radius: 10px;
   }
 
   .hero-below-fade {
@@ -3341,6 +3356,11 @@ body.intro-playing {
   .hero-canvas,
   .hero-edge-fade {
     border-radius: 10px;
+  }
+
+  .hero-edge-fade {
+    --hero-edge-y: clamp(14px, 2.8vh, 34px);
+    --hero-edge-x: clamp(10px, 2.5vw, 28px);
   }
 
   .video-overlay {

@@ -185,15 +185,19 @@ export function IntroHero({
     }
 
     /** Avoid writing CSS vars every frame when layout is unchanged (style recalc competes with video paint). */
-    let panelLayoutKey = ''
-    const setPanelCenters = (x: number) => {
-      const key = `${x}|${canvasWidth}`
-      if (key === panelLayoutKey) return
-      panelLayoutKey = key
+    let layoutKey = ''
+    const syncVideoLayout = (x: number, y: number, drawW: number, drawH: number) => {
+      const key = `${x}|${y}|${drawW}|${drawH}|${canvasWidth}|${canvasHeight}`
+      if (key === layoutKey) return
+      layoutKey = key
       const leftCenterPct = (x / 2 / canvasWidth) * 100
       const rightCenterPct = 100 - leftCenterPct
       hero.style.setProperty('--panel-left-center', `${leftCenterPct}%`)
       hero.style.setProperty('--panel-right-center', `${rightCenterPct}%`)
+      hero.style.setProperty('--hero-vid-top', `${(y / canvasHeight) * 100}%`)
+      hero.style.setProperty('--hero-vid-left', `${(x / canvasWidth) * 100}%`)
+      hero.style.setProperty('--hero-vid-right', `${((canvasWidth - x - drawW) / canvasWidth) * 100}%`)
+      hero.style.setProperty('--hero-vid-bottom', `${((canvasHeight - y - drawH) / canvasHeight) * 100}%`)
     }
 
     const drawFrame = () => {
@@ -208,7 +212,7 @@ export function IntroHero({
         const sw = video.videoWidth
         const sh = video.videoHeight
         const { x, y, drawW, drawH } = layoutFrame(sw, sh)
-        setPanelCenters(x)
+        syncVideoLayout(x, y, drawW, drawH)
         ctx.drawImage(video, 0, 0, sw, sh, x, y, drawW, drawH)
       } else {
         ctx.fillStyle = '#0a0a0e'
