@@ -117,8 +117,11 @@ export const galleryTileRouteCategory: Record<string, FeaturedCategory> = {
   'walls-windows-ceiling-panels': 'Panels',
 }
 
+/** Parse display prices like `Rs. 12,345` (PKR integers; ignore punctuation). */
 export function parsePrice(value: string) {
-  const numeric = Number(value.replace(/[^0-9.]/g, ''))
+  const digits = value.replace(/\D/g, '')
+  if (!digits) return 0
+  const numeric = Number(digits)
   return Number.isFinite(numeric) ? numeric : 0
 }
 

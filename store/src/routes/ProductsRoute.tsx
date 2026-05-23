@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   categorySlugs,
@@ -15,6 +15,7 @@ import { OrderDesignContactFooter, useShopContactDemo } from '../components/shop
 import {
   PRICE_FILTER_MAX,
   PRICE_FILTER_MIN,
+  PRICE_FILTER_STEP,
   PriceRangeFilter,
 } from '../components/PriceRangeFilter.tsx'
 import { ProductsPagination } from '../components/ProductsPagination.tsx'
@@ -30,10 +31,38 @@ export default function ProductsPage() {
     const slug = searchParams.get('category')
     return (slug && slugToCategory[slug]) || 'All'
   })
-  const [minPrice, setMinPrice] = useState(PRICE_FILTER_MIN)
-  const [maxPrice, setMaxPrice] = useState(PRICE_FILTER_MAX)
+  const priceSliderBounds = useMemo(() => {
+    const prices = products.map((p) => parsePrice(p.price)).filter((n) => n > 0)
+    if (!prices.length) {
+      return { sliderMin: PRICE_FILTER_MIN, sliderMax: PRICE_FILTER_MAX }
+    }
+    const catalogMin = Math.min(...prices)
+    const catalogMax = Math.max(...prices)
+    const sliderMin = Math.min(PRICE_FILTER_MIN, Math.floor(catalogMin / PRICE_FILTER_STEP) * PRICE_FILTER_STEP)
+    const sliderMax = Math.max(
+      PRICE_FILTER_MAX,
+      Math.ceil(catalogMax / PRICE_FILTER_STEP) * PRICE_FILTER_STEP
+    )
+    return { sliderMin, sliderMax }
+  }, [products])
+
+  const [minPrice, setMinPrice] = useState(0)
+  const [maxPrice, setMaxPrice] = useState(Number.POSITIVE_INFINITY)
   const [draftMinPrice, setDraftMinPrice] = useState(PRICE_FILTER_MIN)
   const [draftMaxPrice, setDraftMaxPrice] = useState(PRICE_FILTER_MAX)
+  const [priceFilterTouched, setPriceFilterTouched] = useState(false)
+
+  useEffect(() => {
+    if (priceFilterTouched || products.length === 0) return
+    const prices = products.map((p) => parsePrice(p.price)).filter((n) => n > 0)
+    if (!prices.length) return
+    const catalogMax = Math.max(...prices)
+    const catalogMin = Math.min(...prices)
+    setDraftMinPrice(Math.max(priceSliderBounds.sliderMin, catalogMin))
+    setDraftMaxPrice(catalogMax)
+    setMaxPrice(Number.POSITIVE_INFINITY)
+    setMinPrice(0)
+  }, [products, priceFilterTouched, priceSliderBounds.sliderMin])
   const [showMobileCategoryFilter, setShowMobileCategoryFilter] = useState(false)
   const [showMobilePriceFilter, setShowMobilePriceFilter] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -74,6 +103,7 @@ export default function ProductsPage() {
   }
 
   const applyPriceFilter = () => {
+    setPriceFilterTouched(true)
     setMinPrice(draftMinPrice)
     setMaxPrice(draftMaxPrice)
     setShowMobilePriceFilter(false)
@@ -143,6 +173,8 @@ export default function ProductsPage() {
               <PriceRangeFilter
                 draftMin={draftMinPrice}
                 draftMax={draftMaxPrice}
+                sliderMin={priceSliderBounds.sliderMin}
+                sliderMax={priceSliderBounds.sliderMax}
                 onDraftMinChange={setDraftMinPrice}
                 onDraftMaxChange={setDraftMaxPrice}
                 onApply={applyPriceFilter}
@@ -162,6 +194,8 @@ export default function ProductsPage() {
             <PriceRangeFilter
               draftMin={draftMinPrice}
               draftMax={draftMaxPrice}
+              sliderMin={priceSliderBounds.sliderMin}
+              sliderMax={priceSliderBounds.sliderMax}
               onDraftMinChange={setDraftMinPrice}
               onDraftMaxChange={setDraftMaxPrice}
               onApply={applyPriceFilter}

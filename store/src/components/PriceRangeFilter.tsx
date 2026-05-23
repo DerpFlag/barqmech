@@ -1,10 +1,13 @@
 export const PRICE_FILTER_MIN = 100
-export const PRICE_FILTER_MAX = 100000
+/** Upper slider bound when catalog has not loaded yet. */
+export const PRICE_FILTER_MAX = 10_000_000
 export const PRICE_FILTER_STEP = 100
 
 type PriceRangeFilterProps = {
   draftMin: number
   draftMax: number
+  sliderMin?: number
+  sliderMax?: number
   onDraftMinChange: (value: number) => void
   onDraftMaxChange: (value: number) => void
   onApply: () => void
@@ -13,20 +16,23 @@ type PriceRangeFilterProps = {
 export function PriceRangeFilter({
   draftMin,
   draftMax,
+  sliderMin = PRICE_FILTER_MIN,
+  sliderMax = PRICE_FILTER_MAX,
   onDraftMinChange,
   onDraftMaxChange,
   onApply,
 }: PriceRangeFilterProps) {
-  const fillLeft = ((draftMin - PRICE_FILTER_MIN) / (PRICE_FILTER_MAX - PRICE_FILTER_MIN)) * 100
-  const fillRight = 100 - ((draftMax - PRICE_FILTER_MIN) / (PRICE_FILTER_MAX - PRICE_FILTER_MIN)) * 100
+  const span = Math.max(sliderMax - sliderMin, PRICE_FILTER_STEP)
+  const fillLeft = ((draftMin - sliderMin) / span) * 100
+  const fillRight = 100 - ((draftMax - sliderMin) / span) * 100
 
   const setMin = (next: number) => {
-    const min = Math.max(PRICE_FILTER_MIN, Math.min(next, draftMax - PRICE_FILTER_STEP))
+    const min = Math.max(sliderMin, Math.min(next, draftMax - PRICE_FILTER_STEP))
     onDraftMinChange(min)
   }
 
   const setMax = (next: number) => {
-    const max = Math.min(PRICE_FILTER_MAX, Math.max(next, draftMin + PRICE_FILTER_STEP))
+    const max = Math.min(sliderMax, Math.max(next, draftMin + PRICE_FILTER_STEP))
     onDraftMaxChange(max)
   }
 
@@ -45,8 +51,8 @@ export function PriceRangeFilter({
         <input
           type="range"
           className="price-range-input price-range-input--min"
-          min={PRICE_FILTER_MIN}
-          max={PRICE_FILTER_MAX}
+          min={sliderMin}
+          max={sliderMax}
           step={PRICE_FILTER_STEP}
           value={draftMin}
           onChange={(e) => setMin(Number(e.target.value))}
@@ -55,8 +61,8 @@ export function PriceRangeFilter({
         <input
           type="range"
           className="price-range-input price-range-input--max"
-          min={PRICE_FILTER_MIN}
-          max={PRICE_FILTER_MAX}
+          min={sliderMin}
+          max={sliderMax}
           step={PRICE_FILTER_STEP}
           value={draftMax}
           onChange={(e) => setMax(Number(e.target.value))}
