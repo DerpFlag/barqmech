@@ -12,13 +12,10 @@ import { RotatingImageStack } from '../catalog/RotatingImageStack.tsx'
 import { CatalogPricingAlert } from '../catalog/CatalogPricingAlert.tsx'
 import { useCatalog } from '../catalog/CatalogProvider.tsx'
 import { OrderDesignContactFooter, useShopContactDemo } from '../components/shopContact.tsx'
-import {
-  PRICE_FILTER_MAX,
-  PRICE_FILTER_MIN,
-  PRICE_FILTER_STEP,
-  PriceRangeFilter,
-} from '../components/PriceRangeFilter.tsx'
+import { PRICE_FILTER_MAX, PRICE_FILTER_MIN } from '../components/PriceRangeFilter.tsx'
 import { ProductsPagination } from '../components/ProductsPagination.tsx'
+import { ProductsSidebarFilters } from '../components/ProductsSidebarFilters.tsx'
+import { sortCatalogProducts, type ProductSortKey } from '../components/ProductsSortSelect.tsx'
 import { ShopTopbar } from '../components/ShopTopbar.tsx'
 import { scrollProductsListingIntoView } from '../lib/scrollProductsListingIntoView.ts'
 
@@ -31,56 +28,38 @@ export default function ProductsPage() {
     const slug = searchParams.get('category')
     return (slug && slugToCategory[slug]) || 'All'
   })
-  const priceSliderBounds = useMemo(() => {
-    const prices = products.map((p) => parsePrice(p.price)).filter((n) => n > 0)
-    if (!prices.length) {
-      return { sliderMin: PRICE_FILTER_MIN, sliderMax: PRICE_FILTER_MAX }
-    }
-    const catalogMin = Math.min(...prices)
-    const catalogMax = Math.max(...prices)
-    const sliderMin = Math.min(PRICE_FILTER_MIN, Math.floor(catalogMin / PRICE_FILTER_STEP) * PRICE_FILTER_STEP)
-    const sliderMax = Math.max(
-      PRICE_FILTER_MAX,
-      Math.ceil(catalogMax / PRICE_FILTER_STEP) * PRICE_FILTER_STEP
-    )
-    return { sliderMin, sliderMax }
-  }, [products])
-
-  const [minPrice, setMinPrice] = useState(0)
-  const [maxPrice, setMaxPrice] = useState(Number.POSITIVE_INFINITY)
+  const [sort, setSort] = useState<ProductSortKey>('name-asc')
+  const [minPrice, setMinPrice] = useState(PRICE_FILTER_MIN)
+  const [maxPrice, setMaxPrice] = useState(PRICE_FILTER_MAX)
   const [draftMinPrice, setDraftMinPrice] = useState(PRICE_FILTER_MIN)
   const [draftMaxPrice, setDraftMaxPrice] = useState(PRICE_FILTER_MAX)
-  const [priceFilterTouched, setPriceFilterTouched] = useState(false)
-
-  useEffect(() => {
-    if (priceFilterTouched || products.length === 0) return
-    const prices = products.map((p) => parsePrice(p.price)).filter((n) => n > 0)
-    if (!prices.length) return
-    const catalogMax = Math.max(...prices)
-    const catalogMin = Math.min(...prices)
-    setDraftMinPrice(Math.max(priceSliderBounds.sliderMin, catalogMin))
-    setDraftMaxPrice(catalogMax)
-    setMaxPrice(Number.POSITIVE_INFINITY)
-    setMinPrice(0)
-  }, [products, priceFilterTouched, priceSliderBounds.sliderMin])
   const [showMobileCategoryFilter, setShowMobileCategoryFilter] = useState(false)
-  const [showMobilePriceFilter, setShowMobilePriceFilter] = useState(false)
+  const [showMobileRefineFilter, setShowMobileRefineFilter] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const shopContact = useShopContactDemo()
-  const filteredProducts = products.filter((item) => {
-    const categoryMatch = selectedCategory === 'All' || item.category === selectedCategory
-    const price = parsePrice(item.price)
-    return categoryMatch && price >= minPrice && price <= maxPrice
-  })
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((item) => {
+      const categoryMatch = selectedCategory === 'All' || item.category === selectedCategory
+      const price = parsePrice(item.price)
+      return categoryMatch && price >= minPrice && price <= maxPrice
+    })
+  }, [products, selectedCategory, minPrice, maxPrice])
+
+  const sortedProducts = useMemo(
+    () => sortCatalogProducts(filteredProducts, sort, parsePrice),
+    [filteredProducts, sort]
+  )
+
   const activeProductsHeading = selectedCategory === 'All' ? 'All Products' : selectedCategory
   const pageSize = 20
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize))
+  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / pageSize))
   const page = Math.min(currentPage, totalPages)
-  const pagedProducts = filteredProducts.slice((page - 1) * pageSize, page * pageSize)
+  const pagedProducts = sortedProducts.slice((page - 1) * pageSize, page * pageSize)
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [selectedCategory, minPrice, maxPrice])
+  }, [selectedCategory, minPrice, maxPrice, sort])
 
   const goToPage = useCallback((nextPage: number) => {
     setCurrentPage(nextPage)
@@ -103,13 +82,24 @@ export default function ProductsPage() {
   }
 
   const applyPriceFilter = () => {
-    setPriceFilterTouched(true)
     setMinPrice(draftMinPrice)
     setMaxPrice(draftMaxPrice)
-    setShowMobilePriceFilter(false)
+    setShowMobileRefineFilter(false)
   }
 
-  const showPagination = filteredProducts.length > 0
+  const showPagination = sortedProducts.length > 0
+
+  const sidebarFilters = (
+    <ProductsSidebarFilters
+      sort={sort}
+      onSortChange={setSort}
+      draftMin={draftMinPrice}
+      draftMax={draftMaxPrice}
+      onDraftMinChange={setDraftMinPrice}
+      onDraftMaxChange={setDraftMaxPrice}
+      onApplyPriceFilter={applyPriceFilter}
+    />
+  )
 
   return (
     <>
@@ -163,21 +153,22 @@ export default function ProductsPage() {
           <button
             type="button"
             className="products-mobile-filter-toggle"
-            onClick={() => setShowMobilePriceFilter((v) => !v)}
-            aria-expanded={showMobilePriceFilter}
+            onClick={() => setShowMobileRefineFilter((v) => !v)}
+            aria-expanded={showMobileRefineFilter}
           >
-            Filter by Price <span aria-hidden>{showMobilePriceFilter ? '▴' : '▾'}</span>
+            Sort &amp; price <span aria-hidden>{showMobileRefineFilter ? '▴' : '▾'}</span>
           </button>
-          {showMobilePriceFilter && (
-            <div className="products-mobile-filter-panel">
-              <PriceRangeFilter
+          {showMobileRefineFilter && (
+            <div className="products-mobile-filter-panel products-mobile-filter-panel--refine">
+              <ProductsSidebarFilters
+                sort={sort}
+                onSortChange={setSort}
+                sortSelectId="products-sort-mobile"
                 draftMin={draftMinPrice}
                 draftMax={draftMaxPrice}
-                sliderMin={priceSliderBounds.sliderMin}
-                sliderMax={priceSliderBounds.sliderMax}
                 onDraftMinChange={setDraftMinPrice}
                 onDraftMaxChange={setDraftMaxPrice}
-                onApply={applyPriceFilter}
+                onApplyPriceFilter={applyPriceFilter}
               />
             </div>
           )}
@@ -191,15 +182,7 @@ export default function ProductsPage() {
                 {category}
               </button>
             ))}
-            <PriceRangeFilter
-              draftMin={draftMinPrice}
-              draftMax={draftMaxPrice}
-              sliderMin={priceSliderBounds.sliderMin}
-              sliderMax={priceSliderBounds.sliderMax}
-              onDraftMinChange={setDraftMinPrice}
-              onDraftMaxChange={setDraftMaxPrice}
-              onApply={applyPriceFilter}
-            />
+            {sidebarFilters}
           </aside>
 
           <div className="products-main">
@@ -224,11 +207,11 @@ export default function ProductsPage() {
             />
             {catalogLoading ? (
               <p className="checkout-lead">Loading catalog…</p>
-            ) : catalogError && filteredProducts.length === 0 ? (
+            ) : catalogError && sortedProducts.length === 0 ? (
               <p className="checkout-lead" role="alert">
                 {catalogError}
               </p>
-            ) : filteredProducts.length === 0 ? (
+            ) : sortedProducts.length === 0 ? (
               <p className="checkout-lead">No products match these filters yet.</p>
             ) : (
               <>
