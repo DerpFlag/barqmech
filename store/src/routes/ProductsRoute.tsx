@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   categorySlugs,
@@ -12,7 +12,14 @@ import { RotatingImageStack } from '../catalog/RotatingImageStack.tsx'
 import { CatalogPricingAlert } from '../catalog/CatalogPricingAlert.tsx'
 import { useCatalog } from '../catalog/CatalogProvider.tsx'
 import { OrderDesignContactFooter, useShopContactDemo } from '../components/shopContact.tsx'
+import {
+  PRICE_FILTER_MAX,
+  PRICE_FILTER_MIN,
+  PriceRangeFilter,
+} from '../components/PriceRangeFilter.tsx'
+import { ProductsPagination } from '../components/ProductsPagination.tsx'
 import { ShopTopbar } from '../components/ShopTopbar.tsx'
+import { scrollProductsListingIntoView } from '../lib/scrollProductsListingIntoView.ts'
 
 
 export default function ProductsPage() {
@@ -23,15 +30,18 @@ export default function ProductsPage() {
     const slug = searchParams.get('category')
     return (slug && slugToCategory[slug]) || 'All'
   })
-  const [maxPrice, setMaxPrice] = useState(100000)
-  const [draftMaxPrice, setDraftMaxPrice] = useState(100000)
+  const [minPrice, setMinPrice] = useState(PRICE_FILTER_MIN)
+  const [maxPrice, setMaxPrice] = useState(PRICE_FILTER_MAX)
+  const [draftMinPrice, setDraftMinPrice] = useState(PRICE_FILTER_MIN)
+  const [draftMaxPrice, setDraftMaxPrice] = useState(PRICE_FILTER_MAX)
   const [showMobileCategoryFilter, setShowMobileCategoryFilter] = useState(false)
   const [showMobilePriceFilter, setShowMobilePriceFilter] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const shopContact = useShopContactDemo()
   const filteredProducts = products.filter((item) => {
     const categoryMatch = selectedCategory === 'All' || item.category === selectedCategory
-    return categoryMatch && parsePrice(item.price) <= maxPrice
+    const price = parsePrice(item.price)
+    return categoryMatch && price >= minPrice && price <= maxPrice
   })
   const activeProductsHeading = selectedCategory === 'All' ? 'All Products' : selectedCategory
   const pageSize = 20
@@ -41,7 +51,12 @@ export default function ProductsPage() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [selectedCategory, maxPrice])
+  }, [selectedCategory, minPrice, maxPrice])
+
+  const goToPage = useCallback((nextPage: number) => {
+    setCurrentPage(nextPage)
+    requestAnimationFrame(() => scrollProductsListingIntoView())
+  }, [])
 
   useEffect(() => {
     const slug = searchParams.get('category')
@@ -59,9 +74,12 @@ export default function ProductsPage() {
   }
 
   const applyPriceFilter = () => {
+    setMinPrice(draftMinPrice)
     setMaxPrice(draftMaxPrice)
     setShowMobilePriceFilter(false)
   }
+
+  const showPagination = filteredProducts.length > 0
 
   return (
     <>
@@ -122,14 +140,13 @@ export default function ProductsPage() {
           </button>
           {showMobilePriceFilter && (
             <div className="products-mobile-filter-panel">
-              <div className="price-filter">
-                <h4>Price Filter</h4>
-                <p>100 - {draftMaxPrice.toLocaleString()}</p>
-                <input type="range" min={100} max={100000} step={100} value={draftMaxPrice} onChange={(e) => setDraftMaxPrice(Number(e.target.value))} />
-                <button type="button" className="mosaic-discover-btn products-apply-filter-btn" onClick={applyPriceFilter}>
-                  Apply Filter
-                </button>
-              </div>
+              <PriceRangeFilter
+                draftMin={draftMinPrice}
+                draftMax={draftMaxPrice}
+                onDraftMinChange={setDraftMinPrice}
+                onDraftMaxChange={setDraftMaxPrice}
+                onApply={applyPriceFilter}
+              />
             </div>
           )}
         </section>
@@ -142,19 +159,27 @@ export default function ProductsPage() {
                 {category}
               </button>
             ))}
-            <div className="price-filter">
-              <h4>Price Filter</h4>
-              <p>100 - {draftMaxPrice.toLocaleString()}</p>
-              <input type="range" min={100} max={100000} step={100} value={draftMaxPrice} onChange={(e) => setDraftMaxPrice(Number(e.target.value))} />
-              <button type="button" className="mosaic-discover-btn products-apply-filter-btn" onClick={applyPriceFilter}>
-                Apply Filter
-              </button>
-            </div>
+            <PriceRangeFilter
+              draftMin={draftMinPrice}
+              draftMax={draftMaxPrice}
+              onDraftMinChange={setDraftMinPrice}
+              onDraftMaxChange={setDraftMaxPrice}
+              onApply={applyPriceFilter}
+            />
           </aside>
 
           <div className="products-main">
             <div className="products-listing-heading-row">
               <h2 className="products-listing-heading">{activeProductsHeading}</h2>
+              {showPagination && (
+                <ProductsPagination
+                  className="products-pagination--top"
+                  page={page}
+                  totalPages={totalPages}
+                  onPageChange={goToPage}
+                  aria-label="Product pages (top)"
+                />
+              )}
             </div>
             <CatalogPricingAlert
               catalogError={catalogError}
@@ -193,17 +218,7 @@ export default function ProductsPage() {
                     )
                   })}
                 </div>
-                <div className="products-pagination">
-                  <button type="button" className="featured-arrow" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
-                    ‹
-                  </button>
-                  <span>
-                    Page {page} / {totalPages}
-                  </span>
-                  <button type="button" className="featured-arrow" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
-                    ›
-                  </button>
-                </div>
+                <ProductsPagination page={page} totalPages={totalPages} onPageChange={goToPage} aria-label="Product pages" />
               </>
             )}
           </div>

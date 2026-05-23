@@ -2063,8 +2063,100 @@ body.intro-playing {
   font-size: 0.86rem;
 }
 
-.price-filter input {
+.price-range-dual {
+  position: relative;
+  height: 2rem;
+  margin: 0.15rem 0 0.35rem;
+}
+
+.price-range-fill {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.price-range-dual::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+  z-index: 0;
+}
+
+.price-range-input {
+  position: absolute;
+  left: 0;
   width: 100%;
+  margin: 0;
+  height: 2rem;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.price-range-input--min {
+  z-index: 2;
+}
+
+.price-range-input--max {
+  z-index: 3;
+}
+
+.price-range-input::-webkit-slider-runnable-track {
+  height: 4px;
+  background: transparent;
+  border: 0;
+}
+
+.price-range-input::-moz-range-track {
+  height: 4px;
+  background: transparent;
+  border: 0;
+}
+
+.price-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border-radius: 50%;
+  border: 2px solid #dbeafe;
+  background: #1d4ed8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.price-range-input::-moz-range-thumb {
+  pointer-events: auto;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #dbeafe;
+  background: #1d4ed8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.price-range-input:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.price-range-input:focus-visible::-moz-range-thumb {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
 }
 
 .products-apply-filter-btn {
@@ -2080,7 +2172,15 @@ body.intro-playing {
 .products-listing-heading-row {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  scroll-margin-top: 5.5rem;
+}
+
+.products-pagination--top {
+  justify-content: flex-end;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .products-listing-heading {
@@ -3817,11 +3917,19 @@ body.intro-playing {
   }
 
   .products-listing-heading-row {
-    justify-content: center;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .products-listing-heading {
-    text-align: center;
+    text-align: left;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .products-pagination--top {
+    margin-left: auto;
   }
 
   .products-grid {

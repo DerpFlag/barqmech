@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { categorySlugs, finalLogoUrl } from '../data/catalog.ts'
 import { RotatingImageStack } from '../catalog/RotatingImageStack.tsx'
@@ -6,7 +6,9 @@ import { CatalogPricingAlert } from '../catalog/CatalogPricingAlert.tsx'
 import { useCatalog } from '../catalog/CatalogProvider.tsx'
 import { searchProductsByName } from '../lib/searchProducts.ts'
 import { ShopTopbar } from '../components/ShopTopbar.tsx'
+import { ProductsPagination } from '../components/ProductsPagination.tsx'
 import { OrderDesignContactFooter, useShopContactDemo } from '../components/shopContact.tsx'
+import { scrollProductsListingIntoView } from '../lib/scrollProductsListingIntoView.ts'
 
 export default function ProductsSearchPage() {
   const { products, loading: catalogLoading, error: catalogError, diagnostics, buildId, refetch } = useCatalog()
@@ -26,6 +28,11 @@ export default function ProductsSearchPage() {
   useEffect(() => {
     setCurrentPage(1)
   }, [q])
+
+  const goToPage = useCallback((nextPage: number) => {
+    setCurrentPage(nextPage)
+    requestAnimationFrame(() => scrollProductsListingIntoView())
+  }, [])
 
   const onSearchChange = (next: string) => {
     const trimmed = next.trim()
@@ -115,27 +122,7 @@ export default function ProductsSearchPage() {
                 )
               })}
             </div>
-            <div className="products-pagination">
-              <button
-                type="button"
-                className="featured-arrow"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-              >
-                ‹
-              </button>
-              <span>
-                Page {page} / {totalPages}
-              </span>
-              <button
-                type="button"
-                className="featured-arrow"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-              >
-                ›
-              </button>
-            </div>
+            <ProductsPagination page={page} totalPages={totalPages} onPageChange={goToPage} aria-label="Search result pages" />
           </>
         )}
 
