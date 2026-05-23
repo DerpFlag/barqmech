@@ -132,7 +132,7 @@ function HomePage() {
       return
     }
     setDemoStatus({ type: 'success', message: 'Opening Calendly...' })
-    const calendlyUrl = `https://calendly.com/derpflag/30min?email=${encodeURIComponent(normalized)}`
+    const calendlyUrl = `https://calendly.com/raoanasriaz/barqmech-demo?email=${encodeURIComponent(normalized)}`
     window.open(calendlyUrl, '_blank', 'noopener,noreferrer')
     setDemoPromptOpen(false)
   }

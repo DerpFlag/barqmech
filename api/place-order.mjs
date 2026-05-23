@@ -153,7 +153,7 @@ function storeHostnameForCopy(siteBase) {
 }
 
 /** One line item row: thumbnail, copy, link, add-ons, qty & line total. */
-function renderLineItemBlock(l, siteBase) {
+function renderLineItemBlock(l, siteBase, { includeDxf = true } = {}) {
   const img = absoluteAssetUrl(l.imageUrl, siteBase)
   const pUrl = productPageUrl(l, siteBase)
   const add = formatAddonsReadable(l)
@@ -183,7 +183,7 @@ function renderLineItemBlock(l, siteBase) {
               }
               <strong style="color:#334155;">Finish:</strong> ${escapeHtml(l.finish)}<br/>
               ${
-                l.dxfSignedUrl
+                includeDxf && l.dxfSignedUrl
                   ? `<strong style="color:#334155;">DXF file:</strong> <a href="${escapeHtml(l.dxfSignedUrl)}" style="color:#1d4ed8;font-size:13px;font-family:Arial,Helvetica,sans-serif;text-decoration:underline;">Download (CAD)</a> <span style="color:#94a3b8;font-size:12px;">· link expires in 14 days</span><br/>`
                   : ''
               }
@@ -222,7 +222,7 @@ function buildCustomerEmailHtml(ctx) {
   const { greetingName, orderCode, grand, shipping, subtotal, lines, customer, siteBase } = ctx
   const { name, email, phone, addressLine1, city, notes } = customer
   const addressBlock = [addressLine1, city].filter(Boolean).join(', ')
-  const itemsHtml = lines.map((l) => renderLineItemBlock(l, siteBase)).join('')
+  const itemsHtml = lines.map((l) => renderLineItemBlock(l, siteBase, { includeDxf: false })).join('')
 
   const inner = `
 <tr>
