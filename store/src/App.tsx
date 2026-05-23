@@ -222,7 +222,7 @@ function HomePage() {
         onIntroEnded={handleIntroEnded}
         playbackRate={1.5}
         revealLeadSeconds={2}
-        endTrimSeconds={2}
+        endTrimSeconds={1.8}
       >
         <div className={`video-overlay ${introDone ? 'visible' : ''}`}>
           <p className="overlay-copy overlay-left">Waves of change with<br /><span className="overlay-brand-chrome">BARQMECH</span></p>

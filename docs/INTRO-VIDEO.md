@@ -11,11 +11,11 @@ Summary of how the storefront home intro (`Media/Final Video.mp4`) is played and
 | Setting | Value | Effect |
 |--------|--------|--------|
 | `playbackRate` | `1.5` | Plays 50% faster than real time. |
-| `endTrimSeconds` | `2` | Intro ends **2 seconds before** the file’s real end (tail trimmed). |
+| `endTrimSeconds` | `1.8` | Intro ends **1.8 seconds before** the file’s real end (tail trimmed). |
 | `revealLeadSeconds` | `2` | Passed to `IntroHero` but **`onLeadReveal` is not used** — nothing on the page reacts early; only trim + end drive “done.” |
 | Safety timeout | `22s` | If the video never finishes (error, stall), intro still ends. |
 
-**Felt length (approx.):** `(file duration − 2s) ÷ 1.5` in wall-clock seconds.
+**Felt length (approx.):** `(file duration − 1.8s) ÷ 1.5` in wall-clock seconds.
 
 Muted, no loop, `playsInline` for mobile autoplay.
 
@@ -70,7 +70,7 @@ In `App.tsx` on `<IntroHero>`:
 ```tsx
 playbackRate={1.5}
 revealLeadSeconds={2}
-endTrimSeconds={2}
+endTrimSeconds={1.8}
 ```
 
 Rebuild and redeploy the store after changing props.
