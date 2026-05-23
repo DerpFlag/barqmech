@@ -142,11 +142,21 @@ export function placeOrderApiUrl() {
   return `${base}/api/place-order`
 }
 
+/** Storefront contact — single source for contact card, PDP, and WhatsApp links. */
+export const storefrontEmail = 'orders@barqmech.com'
+
 /** E.164 without `tel:` prefix — used in PDP support links. */
-export const storefrontPhoneTel = '+923082779843'
+export const storefrontPhoneTel = '+923480550654'
+
+/** Human-readable phone for contact card and marketing copy. */
+export const storefrontPhoneDisplay = '+92 348 0550654'
 
 /** WhatsApp click-to-chat base URL (no `?text=`). */
-export const storefrontWhatsApp = 'https://wa.me/923082779843'
+export const storefrontWhatsApp = 'https://wa.me/923480550654'
+
+export const storefrontFacebookUrl = 'https://www.facebook.com/BarqMechOfficial/'
+
+export const storefrontLinkedInUrl = 'https://www.linkedin.com/company/barqmech'
 
 /** Human-readable delivery estimate shown on product pages. */
 export function formatEstimatedDeliveryRange() {
