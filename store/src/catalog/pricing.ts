@@ -74,6 +74,14 @@ export function catalogSizeLabels(product: Pick<CatalogProduct, 'variants'>): st
   return labels
 }
 
+/** Customer-facing size text; keeps DB label unchanged for pricing lookups. */
+export function formatSizeDisplay(label: string): string {
+  const t = label.trim()
+  if (!t) return t
+  if (/\b(inches?|in\.?)\b/i.test(t) || /\bin$/i.test(t.trim())) return t
+  return `${t} in`
+}
+
 export function formatCatalogSizesForDescription(labels: string[]): string {
-  return labels.join(' | ')
+  return labels.map(formatSizeDisplay).join(' | ')
 }

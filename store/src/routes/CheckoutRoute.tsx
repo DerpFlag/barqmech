@@ -7,6 +7,7 @@ import {
   placeOrderApiUrl,
   shippingPerUnitForSize,
 } from '../data/catalog.ts'
+import { formatSizeDisplay } from '../catalog/pricing.ts'
 import { OrderDesignContactFooter, useShopContactDemo } from '../components/shopContact.tsx'
 import { ShopTopbar } from '../components/ShopTopbar.tsx'
 import { getEmailFieldError, getPakistanPhoneFieldError } from '../lib/contactFormValidation.ts'
@@ -182,7 +183,7 @@ export default function CheckoutPage() {
                       {line.title}
                     </Link>
                     <p className="checkout-line-meta">
-                      Size {line.size}
+                      Size {formatSizeDisplay(line.size)}
                       {line.designCode != null && line.designCode > 0 ? ` · Design ${line.designCode}` : ''} · {line.finish} · Frame{' '}
                       {line.woodenFrame ? 'Yes' : 'No'} · LED {line.ledBacklight ? 'Yes' : 'No'} · Install {line.installation ? 'Yes' : 'No'}
                     </p>

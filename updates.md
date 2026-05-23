@@ -4,6 +4,12 @@ Chronological notes for agents and humans. Append new entries at the **top**.
 
 ---
 
+## 2026-05-22 — Size (inches) labels on PDP, cart, checkout
+
+**Fix:** `formatSizeDisplay()` appends ` in` when missing; field label **Size (inches)** on product page.
+
+---
+
 ## 2026-05-22 — Product search typeahead + full results page
 
 **Fix:** Topbar search matches site styling; live filter by product title; dropdown shows 5 hits + “Show more”; `/products/search?q=…` with breadcrumb Home / Products / Search.

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { Link } from 'react-router-dom'
+import { formatSizeDisplay } from '../catalog/pricing.ts'
 
 const STORAGE_KEY = 'barqmech-cart-v2'
 
@@ -299,7 +300,7 @@ function CartDrawer() {
                     <span className="cart-drawer-line-dot" aria-hidden>
                       ·
                     </span>
-                    <span>Size {line.size}</span>
+                    <span>Size {formatSizeDisplay(line.size)}</span>
                     <span className="cart-drawer-line-dot" aria-hidden>
                       ·
                     </span>

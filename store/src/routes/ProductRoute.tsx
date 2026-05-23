@@ -14,6 +14,7 @@ import {
   defaultDesignCode,
   designCodeRange,
   formatCatalogSizesForDescription,
+  formatSizeDisplay,
   PDP_FINISHES,
   type PdpFinish,
   unitPricePkr,
@@ -457,9 +458,11 @@ export default function ProductPage() {
               ) : null}
 
               <div className="product-detail-field">
-                <span className="product-detail-label">Size</span>
-                <span className="product-detail-label-meta">{selectedSize || '—'}</span>
-                <div className="product-detail-pills" role="group" aria-label="Size">
+                <span className="product-detail-label">Size (inches)</span>
+                <span className="product-detail-label-meta">
+                  {selectedSize ? formatSizeDisplay(selectedSize) : '—'}
+                </span>
+                <div className="product-detail-pills" role="group" aria-label="Size in inches">
                   {sizeLabels.map((s) => (
                     <button
                       key={s}
@@ -467,7 +470,7 @@ export default function ProductPage() {
                       className={`product-detail-pill${s === selectedSize ? ' is-selected' : ''}`}
                       onClick={() => setSelectedSize(s)}
                     >
-                      {s}
+                      {formatSizeDisplay(s)}
                     </button>
                   ))}
                 </div>
@@ -722,7 +725,7 @@ export default function ProductPage() {
                   <strong>Color:</strong> Gold | Black | Silver
                 </li>
                 <li>
-                  <strong>Size:</strong>{' '}
+                  <strong>Size (inches):</strong>{' '}
                   {descriptionSizesText || 'Contact us for available dimensions'}
                 </li>
                 <li>
