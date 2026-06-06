@@ -20,6 +20,8 @@ import { ProductSearch } from './components/ProductSearch.tsx'
 import { ContactInfoLinks } from './components/ContactInfoLinks.tsx'
 import { getEmailFieldError, getPakistanPhoneFieldError } from './lib/contactFormValidation.ts'
 import { isGmailValidationError } from './lib/gmailEmail.ts'
+import { shuffleHomeFeaturedByCategory } from './lib/shuffleHomeFeatured.ts'
+import type { CatalogProduct } from './catalog/types.ts'
 
 const ProductsPage = lazy(() => import('./routes/ProductsRoute.tsx'))
 const ProductsSearchPage = lazy(() => import('./routes/ProductsSearchRoute.tsx'))
@@ -47,6 +49,20 @@ function HomePage() {
   const [contactFieldErrors, setContactFieldErrors] = useState<{ email?: string; phone?: string }>({})
   const [featuredIndexes, setFeaturedIndexes] = useState<Record<FeaturedCategory, number>>({ Islamic: 0, Artwork: 0, Panels: 0, Misc: 0 })
   const [featuredStep, setFeaturedStep] = useState(25)
+  /** Shuffled once per visit when catalog loads — home carousels only. */
+  const [homeFeaturedByCategory, setHomeFeaturedByCategory] = useState<Record<FeaturedCategory, CatalogProduct[]> | null>(null)
+
+  useEffect(() => {
+    if (!products.length || homeFeaturedByCategory) return
+    setHomeFeaturedByCategory(shuffleHomeFeaturedByCategory(products))
+    setFeaturedIndexes({ Islamic: 0, Artwork: 0, Panels: 0, Misc: 0 })
+  }, [products, homeFeaturedByCategory])
+
+  const homeCategoryItems = useCallback(
+    (category: FeaturedCategory) =>
+      homeFeaturedByCategory?.[category] ?? products.filter((item) => item.category === category),
+    [homeFeaturedByCategory, products],
+  )
 
   /** Mosaic + featured blocks: pause carousel timers until near viewport (saves work while intro / hero fills screen). */
   const retailCarouselRootRef = useRef<HTMLDivElement>(null)
@@ -73,13 +89,13 @@ function HomePage() {
     if (!carouselEngaged) return
     const timers = featuredCategories.map((category, categoryIndex) =>
       window.setInterval(() => {
-        const categoryItems = products.filter((item) => item.category === category)
+        const categoryItems = homeCategoryItems(category)
         if (categoryItems.length <= 1) return
         setFeaturedIndexes((prev) => ({ ...prev, [category]: (prev[category] + 1) % categoryItems.length }))
       }, 3000 + categoryIndex * 280)
     )
     return () => timers.forEach((timer) => window.clearInterval(timer))
-  }, [carouselEngaged, products])
+  }, [carouselEngaged, homeCategoryItems])
 
   useEffect(() => {
     if (!homeEffectsReady) return
@@ -116,11 +132,11 @@ function HomePage() {
   const scrollToSection = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const goToProducts = () => navigate('/products')
   const showPreviousFeatured = (category: FeaturedCategory) => {
-    const categoryItems = products.filter((item) => item.category === category)
+    const categoryItems = homeCategoryItems(category)
     setFeaturedIndexes((prev) => ({ ...prev, [category]: (prev[category] - 1 + categoryItems.length) % Math.max(categoryItems.length, 1) }))
   }
   const showNextFeatured = (category: FeaturedCategory) => {
-    const categoryItems = products.filter((item) => item.category === category)
+    const categoryItems = homeCategoryItems(category)
     setFeaturedIndexes((prev) => ({ ...prev, [category]: (prev[category] + 1) % Math.max(categoryItems.length, 1) }))
   }
 
@@ -266,7 +282,7 @@ function HomePage() {
 
           <section className="product-grid-section" id="shop">
             {featuredCategories.map((category) => {
-              const categoryItems = products.filter((item) => item.category === category)
+              const categoryItems = homeCategoryItems(category)
               const loopItems = [...categoryItems, ...categoryItems]
               const startIndex = featuredIndexes[category] ?? 0
               const categoryPath = `/products?category=${categorySlugs[category]}`

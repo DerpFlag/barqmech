@@ -15,7 +15,9 @@ import {
   designCodeRange,
   formatCatalogSizesForDescription,
   formatSizeDisplay,
+  isSizeFeasible,
   PDP_FINISHES,
+  SHOW_WOODEN_FRAME_ON_PDP,
   type PdpFinish,
   unitPricePkr,
   variantByDesignCode,
@@ -115,7 +117,9 @@ export default function ProductPage() {
     return variantByDesignCode(product.variants, selectedDesignCode) ?? product.variants[0]
   }, [product, selectedDesignCode])
 
-  const sizeLabels = useMemo(() => activeVariant?.pricing.sizes.map((s) => s.label) ?? [], [activeVariant])
+  const sizeTiers = useMemo(() => activeVariant?.pricing.sizes ?? [], [activeVariant])
+
+  const hasInfeasibleSizes = useMemo(() => sizeTiers.some((t) => !isSizeFeasible(t)), [sizeTiers])
 
   const descriptionSizesText = useMemo(() => {
     if (!product) return ''
@@ -151,9 +155,14 @@ export default function ProductPage() {
   }, [product?.id])
 
   useEffect(() => {
-    if (!sizeLabels.length) return
-    setSelectedSize((prev) => (sizeLabels.includes(prev) ? prev : sizeLabels[0]!))
-  }, [sizeLabels, activeVariant?.id])
+    if (!sizeTiers.length) return
+    setSelectedSize((prev) => {
+      const current = sizeTiers.find((t) => t.label === prev)
+      if (current && isSizeFeasible(current)) return prev
+      const firstOk = sizeTiers.find(isSizeFeasible)
+      return firstOk?.label ?? sizeTiers[0]?.label ?? ''
+    })
+  }, [sizeTiers, activeVariant?.id])
 
   useEffect(() => {
     if (!lightboxOpen) return
@@ -463,17 +472,25 @@ export default function ProductPage() {
                   {selectedSize ? formatSizeDisplay(selectedSize) : '—'}
                 </span>
                 <div className="product-detail-pills" role="group" aria-label="Size in inches">
-                  {sizeLabels.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className={`product-detail-pill${s === selectedSize ? ' is-selected' : ''}`}
-                      onClick={() => setSelectedSize(s)}
-                    >
-                      {formatSizeDisplay(s)}
-                    </button>
-                  ))}
+                  {sizeTiers.map((tier) => {
+                    const feasible = isSizeFeasible(tier)
+                    return (
+                      <button
+                        key={tier.label}
+                        type="button"
+                        className={`product-detail-pill${tier.label === selectedSize ? ' is-selected' : ''}${feasible ? '' : ' is-disabled'}`}
+                        disabled={!feasible}
+                        aria-disabled={!feasible}
+                        onClick={() => feasible && setSelectedSize(tier.label)}
+                      >
+                        {formatSizeDisplay(tier.label)}
+                      </button>
+                    )
+                  })}
                 </div>
+                {hasInfeasibleSizes ? (
+                  <p className="product-detail-size-note">Design too complex for this size.</p>
+                ) : null}
               </div>
 
               <div className="product-detail-field">
@@ -496,6 +513,7 @@ export default function ProductPage() {
               <div className="product-detail-field">
                 <span className="product-detail-label">Add-ons</span>
                 <div className="product-detail-checks" role="group" aria-label="Optional add-ons">
+                  {SHOW_WOODEN_FRAME_ON_PDP ? (
                   <label className={`product-detail-check-option${woodenFrame ? ' is-selected' : ''}`}>
                     <input
                       type="checkbox"
@@ -519,6 +537,7 @@ export default function ProductPage() {
                       + {selectedTier ? formatPriceNoDecimals(selectedTier.wooden) : '—'}
                     </span>
                   </label>
+                  ) : null}
                   <label className={`product-detail-check-option${ledBacklight ? ' is-selected' : ''}`}>
                     <input
                       type="checkbox"

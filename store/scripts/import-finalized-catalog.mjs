@@ -134,6 +134,10 @@ function readCsvSync(csvPath) {
   })
 }
 
+function feasibleFromCsv(v) {
+  return intOrZero(v) !== 0
+}
+
 function rowToPricing(row) {
   const s1 = String(row.size1_w_x_h_inches || '').trim()
   const s2 = String(row.size2_w_x_h_inches || '').trim()
@@ -148,6 +152,7 @@ function rowToPricing(row) {
         wooden: intOrZero(row.size1_wooden_frame_usd),
         led: intOrZero(row.size1_led_usd),
         install: intOrZero(row.size1_installation_usd),
+        feasible: feasibleFromCsv(row.size1_feasible ?? 1),
       },
       {
         label: s2,
@@ -157,6 +162,7 @@ function rowToPricing(row) {
         wooden: intOrZero(row.size2_wooden_frame_usd),
         led: intOrZero(row.size2_led_usd),
         install: intOrZero(row.size2_installation_usd),
+        feasible: feasibleFromCsv(row.size2_feasible ?? 1),
       },
       {
         label: s3,
@@ -166,6 +172,7 @@ function rowToPricing(row) {
         wooden: intOrZero(row.size3_wooden_frame_usd),
         led: intOrZero(row.size3_led_usd),
         install: intOrZero(row.size3_installation_usd),
+        feasible: feasibleFromCsv(row.size3_feasible ?? 1),
       },
     ].filter((t) => t.label.length > 0),
   }

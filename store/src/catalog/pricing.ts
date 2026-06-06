@@ -1,7 +1,14 @@
-import type { CatalogProduct, CatalogVariantRow } from './types.ts'
+import type { CatalogProduct, CatalogSizeTier, CatalogVariantRow } from './types.ts'
 
 export const PDP_FINISHES = ['Silver', 'Gold', 'Black'] as const
 export type PdpFinish = (typeof PDP_FINISHES)[number]
+
+/** Wooden frame add-on hidden on PDP for now; pricing field kept in catalog. */
+export const SHOW_WOODEN_FRAME_ON_PDP = false
+
+export function isSizeFeasible(tier: Pick<CatalogSizeTier, 'feasible'>): boolean {
+  return tier.feasible !== false
+}
 
 export function minListPricePkr(product: Pick<CatalogProduct, 'variants'>): number {
   let min = Number.POSITIVE_INFINITY

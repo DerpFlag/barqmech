@@ -3063,6 +3063,25 @@ body.intro-playing {
   box-shadow: inset 0 0 0 1px rgba(119, 182, 255, 0.25);
 }
 
+.product-detail-pill.is-disabled,
+.product-detail-pill:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+}
+
+.product-detail-pill.is-disabled.is-selected,
+.product-detail-pill:disabled.is-selected {
+  opacity: 0.55;
+}
+
+.product-detail-size-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
 .product-detail-checks {
   display: grid;
   gap: 0.6rem;

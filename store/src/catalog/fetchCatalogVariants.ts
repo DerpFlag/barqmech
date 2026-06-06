@@ -43,6 +43,7 @@ export function normalizeVariantPricing(raw: unknown): { sizes: CatalogSizeTier[
       wooden: intPrice(o.wooden ?? o.wooden_frame),
       led: intPrice(o.led),
       install: intPrice(o.install ?? o.installation),
+      feasible: o.feasible === false || o.feasible === 0 ? false : true,
     })
   }
   return { sizes }

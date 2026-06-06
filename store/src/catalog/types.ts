@@ -8,6 +8,8 @@ export type CatalogSizeTier = {
   wooden: number
   led: number
   install: number
+  /** When false, size is too complex for this design (CSV sizeN_feasible = 0). Defaults to true if omitted. */
+  feasible?: boolean
 }
 
 export type CatalogPricing = {
