@@ -10,7 +10,7 @@
  *   FINALIZED_ROOT  — default: <repo>/Media/Finalized
  *   DRY_RUN=1       — parse + plan only; no Storage/DB writes
  *   SKIP_DXF=1      — do not upload DXFs to Supabase; still store dxf_storage_path for Drive/email hints
- *   MAX_IMAGES_PER_PRODUCT — cap gallery uploads (default 6)
+ *   MAX_IMAGES_PER_PRODUCT — optional cap on gallery uploads (default: all images in folder)
  *
  * Run from repo (barqmech), with env file in store/:
  *   cd store
@@ -183,7 +183,8 @@ function rowToPricing(row) {
 async function main() {
   const dryRun = process.env.DRY_RUN === '1' || process.env.DRY_RUN === 'true'
   const skipDxf = process.env.SKIP_DXF === '1' || process.env.SKIP_DXF === 'true'
-  const maxImages = Math.max(1, parseInt(process.env.MAX_IMAGES_PER_PRODUCT || '6', 10) || 6)
+  const maxImagesEnv = String(process.env.MAX_IMAGES_PER_PRODUCT || '').trim()
+  const maxImages = maxImagesEnv ? Math.max(1, parseInt(maxImagesEnv, 10) || 1) : null
   const url = String(process.env.SUPABASE_URL || '').trim()
   const serviceKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
   const csvPath = resolve(process.env.PRICES_CSV || join(REPO_ROOT, 'Media', 'Finalized', 'prices_summary.csv'))
@@ -247,10 +248,13 @@ async function main() {
     p.variants.set(designCode, { pricing, sort, dxfAbsPath })
   }
 
-  console.log(`Products: ${products.size} (dry-run=${dryRun}, skip-dxf=${skipDxf}, max-images=${maxImages})`)
+  console.log(
+    `Products: ${products.size} (dry-run=${dryRun}, skip-dxf=${skipDxf}, max-images=${maxImages ?? 'all'})`,
+  )
 
   for (const p of products.values()) {
-    const imagePaths = allImagePaths(p.folder).slice(0, maxImages)
+    const allPaths = allImagePaths(p.folder)
+    const imagePaths = maxImages ? allPaths.slice(0, maxImages) : allPaths
     if (!imagePaths.length) {
       console.warn(`No image in ${p.folder} — skipping product ${p.slug}`)
       continue

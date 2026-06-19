@@ -19,13 +19,15 @@ const childEnv = {
   SUPABASE_URL: env.SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY,
   SKIP_DXF: process.env.SKIP_DXF ?? '1',
-  MAX_IMAGES_PER_PRODUCT: process.env.MAX_IMAGES_PER_PRODUCT ?? '6',
   DRY_RUN: process.env.DRY_RUN ?? '0',
+}
+if (process.env.MAX_IMAGES_PER_PRODUCT) {
+  childEnv.MAX_IMAGES_PER_PRODUCT = process.env.MAX_IMAGES_PER_PRODUCT
 }
 
 console.log(`Import using ${resolveKeysFilePath()}`)
 console.log(`Target: ${env.SUPABASE_URL}`)
-console.log(`SKIP_DXF=${childEnv.SKIP_DXF} MAX_IMAGES_PER_PRODUCT=${childEnv.MAX_IMAGES_PER_PRODUCT}`)
+console.log(`SKIP_DXF=${childEnv.SKIP_DXF} max-images=${childEnv.MAX_IMAGES_PER_PRODUCT ?? 'all'}`)
 
 const script = join(__dirname, 'import-finalized-catalog.mjs')
 const result = spawnSync(process.execPath, [script], {
