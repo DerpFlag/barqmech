@@ -14,11 +14,15 @@ export function shuffleArray<T>(items: readonly T[]): T[] {
 }
 
 /** One shuffled list per category for home page carousels (images required). */
-export function shuffleHomeFeaturedByCategory(products: CatalogProduct[]): Record<FeaturedCategory, CatalogProduct[]> {
+export function shuffleHomeFeaturedByCategory(
+  products: CatalogProduct[],
+  perCategory = 10,
+): Record<FeaturedCategory, CatalogProduct[]> {
+  const limit = Math.max(1, perCategory)
   return Object.fromEntries(
     featuredCategories.map((category) => [
       category,
-      shuffleArray(products.filter((p) => p.category === category && p.images.length > 0)),
+      shuffleArray(products.filter((p) => p.category === category && p.images.length > 0)).slice(0, limit),
     ]),
   ) as Record<FeaturedCategory, CatalogProduct[]>
 }

@@ -1,9 +1,10 @@
 /**
  * Catalog image sizing (listing vs PDP):
  *
- * 1. **Vercel Image Optimization** (recommended without Supabase Pro)
+ * 1. **Vercel Image Optimization** (optional; best when origin files are large)
  *    Set `VITE_CATALOG_IMAGE_OPTIMIZER=vercel` on Vercel. Uses `/_vercel/image?url=…&w=…&q=…`
- *    against your public Supabase URLs — no duplicate files in Storage.
+ *    Each cache miss still pulls the full origin from Supabase (counts as egress).
+ *    With compressed origins (≤150 KB), prefer leaving this **unset** and serving Storage URLs directly.
  *
  * 2. **Supabase Storage transforms** (Pro)
  *    Set `VITE_CATALOG_IMAGE_TRANSFORMS=true` after enabling transforms in the dashboard.

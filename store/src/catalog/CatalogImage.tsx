@@ -20,10 +20,7 @@ export function CatalogImage({ publicUrl, size, rawSrc, onError, ...rest }: Prop
     <img
       {...rest}
       src={src}
-      onError={(e) => {
-        onError?.(e)
-        if (src !== publicUrl && publicUrl?.trim()) setSrc(publicUrl)
-      }}
+      onError={onError}
     />
   )
 }

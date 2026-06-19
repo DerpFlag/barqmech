@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CatalogImage } from './CatalogImage.tsx'
 import { catalogImageUrl, type CatalogImageSize } from './productImages.ts'
-import { preloadImageUrl, preloadImageUrls } from './preloadImages.ts'
+import { preloadImageUrls } from './preloadImages.ts'
 
 type Props = {
   urls: string[]
@@ -68,14 +68,18 @@ export function RotatingImageStack({
     }
 
     let cancelled = false
-    const resolved = slides.map((u) => resolveSrc(u, catalogSize))
-    void preloadImageUrls(resolved, 3).then(() => {
+    const targets = [resolveSrc(slides[activeIndex]!, catalogSize)]
+    if (slides.length > 1) {
+      const next = (activeIndex + 1) % slides.length
+      targets.push(resolveSrc(slides[next]!, catalogSize))
+    }
+    void preloadImageUrls(targets, 2).then(() => {
       if (!cancelled) setReady(true)
     })
     return () => {
       cancelled = true
     }
-  }, [inView, slides, catalogSize])
+  }, [inView, slides, catalogSize, activeIndex])
 
   useEffect(() => {
     if (controlledIndex !== undefined) return
@@ -88,13 +92,6 @@ export function RotatingImageStack({
 
     return () => window.clearInterval(timer)
   }, [rotate, ready, inView, slides.length, intervalMs, controlledIndex])
-
-  useEffect(() => {
-    if (!ready || slides.length <= 1) return
-    const next = (activeIndex + 1) % slides.length
-    const url = resolveSrc(slides[next]!, catalogSize)
-    void preloadImageUrl(url)
-  }, [activeIndex, ready, slides, catalogSize])
 
   return (
     <div ref={stackRef} className={stackClassName}>

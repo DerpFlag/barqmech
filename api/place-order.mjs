@@ -185,7 +185,9 @@ function renderLineItemBlock(l, siteBase, { includeDxf = true } = {}) {
               ${
                 includeDxf && l.dxfSignedUrl
                   ? `<strong style="color:#334155;">DXF file:</strong> <a href="${escapeHtml(l.dxfSignedUrl)}" style="color:#1d4ed8;font-size:13px;font-family:Arial,Helvetica,sans-serif;text-decoration:underline;">Download (CAD)</a> <span style="color:#94a3b8;font-size:12px;">· link expires in 14 days</span><br/>`
-                  : ''
+                  : includeDxf && l.dxfDriveFolder && l.dxfDrivePath
+                    ? `<strong style="color:#334155;">DXF file:</strong> <code style="font-size:12px;color:#475569;">${escapeHtml(l.dxfDrivePath)}</code> — <a href="${escapeHtml(l.dxfDriveFolder)}" style="color:#1d4ed8;font-size:13px;font-family:Arial,Helvetica,sans-serif;text-decoration:underline;">Open Google Drive Finalized folder</a><br/>`
+                    : ''
               }
               <strong style="color:#334155;">Add-ons:</strong> ${escapeHtml(add.frame)} · ${escapeHtml(add.led)} · ${escapeHtml(add.inst)}
             </div>
@@ -329,13 +331,16 @@ async function readJsonBody(req) {
   return JSON.parse(raw)
 }
 
-/** Adds `dxf_storage_path` (for DB snapshot) and `dxfSignedUrl` (for email only) using service role + private bucket. */
+/** Adds DXF paths for DB snapshot and download hints for merchant email (Supabase signed URL or Google Drive folder). */
 async function enrichLinesWithDxfDownloads(supabaseSvc, lines) {
-  if (!supabaseSvc || !Array.isArray(lines) || lines.length === 0) {
+  if (!Array.isArray(lines) || lines.length === 0) {
     return lines.map((l) => ({ ...l }))
   }
+  const driveFolder = String(process.env.GOOGLE_DRIVE_FINALIZED_URL || '').trim()
   const pids = [...new Set(lines.map((l) => String(l.productId || '').trim()).filter(Boolean))]
-  if (!pids.length) return lines.map((l) => ({ ...l }))
+  if (!supabaseSvc || !pids.length) {
+    return lines.map((l) => ({ ...l, dxfDriveFolder: driveFolder || undefined }))
+  }
 
   const { data: variants, error } = await supabaseSvc
     .from('catalog_variants')
@@ -344,7 +349,7 @@ async function enrichLinesWithDxfDownloads(supabaseSvc, lines) {
 
   if (error) {
     console.error('[place-order] catalog_variants', error)
-    return lines.map((l) => ({ ...l }))
+    return lines.map((l) => ({ ...l, dxfDriveFolder: driveFolder || undefined }))
   }
 
   const lookup = new Map()
@@ -362,12 +367,16 @@ async function enrichLinesWithDxfDownloads(supabaseSvc, lines) {
     const storagePath = pid ? lookup.get(`${pid}::${dc}`) : null
     let dxfSignedUrl = null
     const dxf_storage_path = storagePath || undefined
-    if (storagePath) {
+    const dxfDriveFolder = driveFolder || undefined
+    const dxfDrivePath = storagePath || undefined
+
+    if (storagePath && !driveFolder && supabaseSvc) {
       const { data, error: signErr } = await supabaseSvc.storage.from('product-dxf').createSignedUrl(storagePath, ttlSec)
       if (signErr) console.error('[place-order] DXF sign', signErr)
       else dxfSignedUrl = data?.signedUrl ?? null
     }
-    out.push({ ...l, dxf_storage_path, dxfSignedUrl })
+
+    out.push({ ...l, dxf_storage_path, dxfSignedUrl, dxfDriveFolder, dxfDrivePath })
   }
   return out
 }
