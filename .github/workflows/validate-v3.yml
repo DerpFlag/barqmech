@@ -1,0 +1,23 @@
+name: Validate V3 storefront
+on:
+  pull_request:
+  push:
+    branches: [main, master, codex/v3-storefront-release]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm --prefix store ci
+      - run: npm --prefix CodeShinobi/barqmech-store-v3 ci
+      - run: npm --prefix CodeShinobi/barqmech-store-v3 test
+      - run: npm --prefix CodeShinobi/barqmech-store-v3 run build
+        env:
+          CATALOG_SOURCE: supabase

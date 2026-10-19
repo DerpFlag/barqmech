@@ -1,0 +1,11 @@
+.shinobi-shell {
+  --palette-cream:#fff5e6;
+  --palette-sky:#d9eaf5;
+  --palette-denim:var(--palette-sky);
+  --palette-ink:#171b20;
+  --palette-muted:#41464c;
+  --palette-blue:var(--bm-accent-glow);
+  --palette-blue-hover:var(--palette-blue);
+  --palette-on-action:var(--palette-ink);
+  --palette-line:#171b2040;
+}

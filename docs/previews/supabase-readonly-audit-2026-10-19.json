@@ -1,0 +1,144 @@
+{
+  "date": "2026-10-19",
+  "project": "ajaugjszvbsdxicswfwx.supabase.co",
+  "mode": "read-only inventory; no order records downloaded",
+  "tables": {
+    "catalog_products": {
+      "columns": [
+        "category",
+        "created_at",
+        "id",
+        "image_urls",
+        "slug",
+        "title",
+        "updated_at"
+      ],
+      "service": {
+        "status": 206,
+        "count_range": "*/346"
+      },
+      "anon": {
+        "status": 206,
+        "count_range": "*/346"
+      }
+    },
+    "orders": {
+      "columns": [
+        "address_line1",
+        "city",
+        "created_at",
+        "customer_email",
+        "customer_name",
+        "customer_phone",
+        "grand_total_pkr",
+        "id",
+        "lines",
+        "notes",
+        "order_code",
+        "order_completed",
+        "order_completed_at",
+        "order_date",
+        "payment_method",
+        "shipping_pkr",
+        "subtotal_pkr"
+      ],
+      "service": {
+        "status": 206,
+        "count_range": "*/20"
+      },
+      "anon": {
+        "status": 200,
+        "count_range": "*/0"
+      }
+    },
+    "catalog_variants": {
+      "columns": [
+        "created_at",
+        "design_code",
+        "dxf_storage_path",
+        "id",
+        "pricing",
+        "product_id",
+        "sort_order"
+      ],
+      "service": {
+        "status": 206,
+        "count_range": "*/2355"
+      },
+      "anon": {
+        "status": 206,
+        "count_range": "*/2355"
+      }
+    },
+    "order_products": {
+      "columns": [
+        "category_slug",
+        "finish",
+        "image_url",
+        "installation",
+        "led_backlight",
+        "line_id",
+        "line_subtotal_pkr",
+        "merge_key",
+        "order_code",
+        "order_completed",
+        "order_completed_at",
+        "order_date",
+        "order_id",
+        "order_placed_at",
+        "order_product_urls",
+        "product_id",
+        "product_url",
+        "quantity",
+        "shipping_line_pkr",
+        "size",
+        "slug",
+        "sort_index",
+        "title",
+        "unit_price_pkr",
+        "wooden_frame"
+      ],
+      "service": {
+        "status": 206,
+        "count_range": "*/21"
+      },
+      "anon": {
+        "status": 401,
+        "count_range": null
+      }
+    }
+  },
+  "rpc_names": [],
+  "buckets": {
+    "product-images": {
+      "public": true,
+      "objects": 1293,
+      "bytes": 1079775688,
+      "largest_bytes": 5972120
+    },
+    "product-dxf": {
+      "public": false,
+      "objects": 2470,
+      "bytes": 2515869989,
+      "largest_bytes": 23058062
+    }
+  },
+  "coverage": {
+    "legacy_products": 346,
+    "legacy_variants": 2355,
+    "v3_products": 346,
+    "v3_designs": 2470,
+    "v3_product_ids_missing_from_legacy": 0,
+    "v3_designs_without_dxf_mapping": 115,
+    "v3_mapped_designs_without_storage_object": 0,
+    "legacy_nonempty_dxf_mappings": 2355
+  },
+  "private_dxf_public_route_status": 400,
+  "limitations": [
+    "No SQL execution/pg catalog policy inspection",
+    "No real order/customer records read",
+    "No email sent",
+    "No writes, migrations, imports or uploads",
+    "Metadata coverage does not verify DXF geometry/ordered dimensions"
+  ]
+}

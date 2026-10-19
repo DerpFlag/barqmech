@@ -1,0 +1,24 @@
+name: Retry pending order notifications
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 * * * *'
+permissions: {}
+concurrency:
+  group: order-notification-retry
+  cancel-in-progress: false
+jobs:
+  retry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      SITE_URL: ${{ secrets.ORDER_RETRY_SITE_URL }}
+      RETRY_TOKEN: ${{ secrets.ORDER_RETRY_TOKEN }}
+    steps:
+      - name: Retry persisted notifications
+        if: env.SITE_URL != '' && env.RETRY_TOKEN != ''
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --max-time 60 --request POST \
+            --header "Authorization: Bearer $RETRY_TOKEN" \
+            "$SITE_URL/api/v3/retry-notifications"

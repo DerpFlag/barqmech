@@ -1,0 +1,7 @@
+# V3 catalog data
+
+`products.csv` stores product identity, category, title and public images. `prices.csv` stores each design/size/finish price and `area_sqft`: rectangular width × height in inches /144, rounded to8 decimal places. This is the bounding area, not the cut-metal surface or package weight. Keep the area cell consistent when editing dimensions; the catalog compiler rejects missing, nonpositive or mismatching areas. All7419 existing rows have area populated. Generated size options expose `areaSqFt`; product prices and feasibility were preserved.
+
+Shipping policy (2026-10-19): charge once per order using the largest individual item's area, independent of quantity or number of lines. Up to4 sq ft: Rs500; over4 through7: Rs1000; above7: Rs1000 + Rs200 × (ceil(area) −7). Thus7.5/8 sq ft costs1200,9 costs1400. Empty cart costs0. Shared `scripts/shipping.mjs` owns browser/server calculations; shipping is not a per-item CSV price. The area is derived from canonical size dimensions at checkout, which the compiler validates against the CSV area column; client-supplied area/rates are never trusted by the order API.
+
+Order persistence attributes the one shipping charge to the first largest-area line; other lines record0, so line charges sum to the order total even when largest areas tie. Existing saved orders retain their historical totals. No database migration is required for this policy. Run `npm test` and `npm run build` after catalog changes. Backend launch gates still apply before live orders.

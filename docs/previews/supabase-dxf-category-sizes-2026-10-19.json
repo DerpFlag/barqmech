@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-19",
+  "read_only": true,
+  "categories": {
+    "Artwork": {
+      "objects": 123,
+      "bytes": 82027400
+    },
+    "Islamic": {
+      "objects": 157,
+      "bytes": 147796430
+    },
+    "Misc": {
+      "objects": 62,
+      "bytes": 70282487
+    },
+    "Panels": {
+      "objects": 2128,
+      "bytes": 2215763672
+    }
+  },
+  "non_panel_dxf_bytes": 300106317,
+  "non_panel_dxf_objects": 342
+}

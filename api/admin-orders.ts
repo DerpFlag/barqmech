@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { getAdminTokenFromReq, verifyAdminToken } from './lib/admin-auth'
+import { getAdminTokenFromReq, verifyAdminToken } from '../server/shared/admin-auth'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -139,6 +139,8 @@ function normalizeAdminLines(raw: unknown, orderId: string, req: { headers?: Rec
 }
 
 export default async function handler(req: any, res: any) {
+  res.setHeader('Cache-Control', 'private, no-store')
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow')
   if (!requireAdmin(req, res)) return
 
   let supabase

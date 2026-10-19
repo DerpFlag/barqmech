@@ -1,10 +1,12 @@
+import { CheckoutError } from '../server/v3/checkout.mjs'
+import { database, rateLimit } from '../server/v3/http.mjs'
 import getRawBody from 'raw-body'
 import {
   adminPasswordConfigured,
   adminPasswordOk,
   createAdminToken,
   setAdminCookieHeader,
-} from './lib/admin-auth'
+} from '../server/shared/admin-auth'
 
 function bodyFromParsedJson(raw: string): Record<string, unknown> {
   try {
@@ -67,11 +69,13 @@ function json(res: any, status: number, payload: Record<string, unknown>) {
 }
 
 export default async function handler(req: any, res: any) {
+  res.setHeader('Cache-Control', 'private, no-store')
   try {
     if (req.method !== 'POST') {
       return json(res, 405, { error: 'Method not allowed' })
     }
 
+    await rateLimit(req,database(),'admin-login',5)
     const body = await readLoginBody(req)
 
     const onVercel = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
@@ -105,7 +109,7 @@ export default async function handler(req: any, res: any) {
     const msg = err instanceof Error ? err.message : String(err)
     const r = res as { headersSent?: boolean; writableEnded?: boolean }
     if (!r.headersSent && !r.writableEnded) {
-      json(res, 500, { error: `Login handler error: ${msg}` })
+      json(res, err instanceof CheckoutError ? err.status : 503, { error: err instanceof CheckoutError ? msg : 'Admin login is temporarily unavailable.' })
     }
   }
 }
