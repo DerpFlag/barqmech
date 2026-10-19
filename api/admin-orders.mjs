@@ -1,0 +1,210 @@
+import { enforceOrigin } from '../server/v3/http.mjs';
+import { createClient } from '@supabase/supabase-js';
+import { getAdminTokenFromReq, verifyAdminToken } from '../server/shared/admin-auth.mjs';
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function friendlyDbError(err) {
+    const msg = String(err?.message || '');
+    const code = String(err?.code || '');
+    if (/order_completed|order_completed_at|order_date|column.*does not exist|PGRST204/i.test(msg) || code === '42703') {
+        return 'Supabase schema may be behind this API. Run migrations from store/supabase/migrations/ (005_order_completed.sql, 007_order_dates_product_links_view.sql, etc.).';
+    }
+    return msg || 'Database error';
+}
+function serviceEnv() {
+    const url = String(process.env.SUPABASE_URL ?? '').trim();
+    const key = String(process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+    const missing = [];
+    if (!url)
+        missing.push('SUPABASE_URL');
+    if (!key)
+        missing.push('SUPABASE_SERVICE_ROLE_KEY');
+    return { url, key, missing };
+}
+function serviceSupabase() {
+    const { url, key, missing } = serviceEnv();
+    if (missing.length) {
+        const err = new Error(`Missing env (after trim): ${missing.join(', ')}. Admin needs the service role key from Supabase → Settings → API (not the anon key).`);
+        err.code = 'ADMIN_ENV';
+        throw err;
+    }
+    try {
+        return createClient(url, key);
+    }
+    catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        const wrap = new Error(`Supabase createClient failed: ${msg}`);
+        wrap.code = 'SUPABASE_CLIENT';
+        throw wrap;
+    }
+}
+function requireAdmin(req, res) {
+    const token = getAdminTokenFromReq(req);
+    if (!verifyAdminToken(token)) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return false;
+    }
+    return true;
+}
+/** Origin for resolving relative image paths: env → admin request → Vercel host. */
+function siteBaseUrl(req) {
+    const explicit = (process.env.PUBLIC_SITE_URL || '').trim().replace(/\/$/, '');
+    if (explicit)
+        return explicit;
+    const h = req.headers || {};
+    const pick = (k) => {
+        const v = h[k];
+        return Array.isArray(v) ? v[0] : v;
+    };
+    const fromHeader = String(pick('x-barqmech-origin') ?? '').trim().replace(/\/$/, '');
+    if (fromHeader.startsWith('http://') || fromHeader.startsWith('https://'))
+        return fromHeader;
+    const ref = String(pick('referer') ?? '').trim();
+    try {
+        if (ref)
+            return new URL(ref).origin;
+    }
+    catch {
+        /* ignore */
+    }
+    const v = process.env.VERCEL_URL;
+    if (v)
+        return `https://${String(v).replace(/^https?:\/\//, '')}`;
+    return '';
+}
+function absolutizeImage(href, base) {
+    if (!href)
+        return '';
+    const s = String(href);
+    if (s.startsWith('http://') || s.startsWith('https://'))
+        return s;
+    if (s.startsWith('//'))
+        return `https:${s}`;
+    if (!base)
+        return s;
+    return base + (s.startsWith('/') ? s : `/${s}`);
+}
+function productUrlFromLine(line, base) {
+    const slug = String(line.slug || '');
+    const cat = String(line.category_slug ?? line.categorySlug ?? '');
+    if (!base || !slug || !cat)
+        return String(line.product_url || '');
+    return `${base}/products/${encodeURIComponent(cat)}/${encodeURIComponent(slug)}`;
+}
+/** Build admin `order_lines` shape from `orders.lines` JSONB (new enriched rows or legacy client payload). */
+function normalizeAdminLines(raw, orderId, req) {
+    const base = siteBaseUrl(req);
+    const arr = Array.isArray(raw) ? raw : [];
+    return arr.map((item, idx) => {
+        const l = item;
+        const qty = Math.min(999, Math.max(1, Math.round(Number(l.quantity ?? 1))));
+        const unitFromSnake = Math.round(Number(l.unit_price_pkr));
+        const unitFromCamel = Math.round(Number(l.unitPrice));
+        let unit = Number.isFinite(unitFromSnake) && unitFromSnake > 0 ? unitFromSnake : unitFromCamel;
+        if (!Number.isFinite(unit) || unit <= 0) {
+            const sub = Math.round(Number(l.line_subtotal_pkr ?? l.lineSubtotal ?? 0));
+            if (Number.isFinite(sub) && sub > 0 && qty > 0)
+                unit = Math.round(sub / qty);
+        }
+        if (!Number.isFinite(unit) || unit < 0)
+            unit = 0;
+        const slug = String(l.slug || '');
+        const categorySlug = String(l.category_slug ?? l.categorySlug ?? '');
+        const imageRaw = String(l.image_url ?? l.imageUrl ?? '');
+        const existingProductUrl = String(l.product_url || l.product_link || l.productUrl || l.productLink || '');
+        const productUrl = existingProductUrl || productUrlFromLine(l, base);
+        const imageUrl = absolutizeImage(imageRaw, base) || imageRaw;
+        const lineSub = Number(l.line_subtotal_pkr);
+        const lineSubOk = Number.isFinite(lineSub) && lineSub > 0 ? lineSub : unit * qty;
+        const shipLine = Math.round(Number(l.shipping_line_pkr ?? 0));
+        return {
+            id: String(l.id || `${orderId}-${idx}`),
+            order_id: orderId,
+            sort_index: Number(l.sort_index ?? idx),
+            title: String(l.title || ''),
+            image_url: imageUrl,
+            product_url: productUrl,
+            slug,
+            category_slug: categorySlug,
+            quantity: qty,
+            unit_price_pkr: unit,
+            line_subtotal_pkr: lineSubOk,
+            shipping_line_pkr: shipLine,
+            size: String(l.size || ''),
+            finish: String(l.finish || ''),
+            wooden_frame: Boolean(l.wooden_frame ?? l.woodenFrame),
+            led_backlight: Boolean(l.led_backlight ?? l.ledBacklight),
+            installation: Boolean(l.installation),
+        };
+    });
+}
+export default async function handler(req, res) {
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    if (!requireAdmin(req, res))
+        return;
+    if (req.method === 'PATCH') {
+    try { enforceOrigin(req); } catch (error) { return res.status(error.status ?? 403).json({error:'Request origin not allowed.'}); }
+    }
+    let supabase;
+    try {
+        supabase = serviceSupabase();
+    }
+    catch (e) {
+        console.error('[admin-orders]', e);
+        const msg = e instanceof Error ? e.message : String(e);
+        const hint = 'If variables are set on Vercel but this still appears: use the same Supabase project as checkout; set them for Production (and Preview if you use preview URLs); redeploy. If the storefront uses VITE_API_ORIGIN, that host must be this deployment (or unset VITE_API_ORIGIN for same-origin API).';
+        const code = e.code;
+        if (code === 'ADMIN_ENV') {
+            return res.status(500).json({ error: msg, hint });
+        }
+        return res.status(500).json({
+            error: msg,
+            hint,
+        });
+    }
+    if (req.method === 'GET') {
+        const { data: orders, error: e1 } = await supabase
+            .from('orders')
+            .select('id, order_code, customer_name, customer_email, customer_phone, address_line1, city, notes, lines, subtotal_pkr, shipping_pkr, grand_total_pkr, payment_method, created_at, order_date, order_completed, order_completed_at')
+            .order('created_at', { ascending: false });
+        if (e1) {
+            console.error('[admin-orders] list', e1);
+            return res.status(500).json({ error: friendlyDbError(e1) });
+        }
+        const list = orders || [];
+        const merged = list.map((o) => {
+            const id = String(o.id);
+            return {
+                ...o,
+                order_lines: normalizeAdminLines(o.lines, id, req),
+            };
+        });
+        return res.status(200).json({ orders: merged });
+    }
+    if (req.method === 'PATCH') {
+        const orderId = String(req.body?.orderId ?? '').trim();
+        const completed = Boolean(req.body?.order_completed ?? req.body?.completed);
+        if (!UUID_RE.test(orderId)) {
+            return res.status(400).json({ error: 'Invalid order id' });
+        }
+        const updates = {
+            order_completed: completed,
+            order_completed_at: completed ? new Date().toISOString() : null,
+        };
+        const { data, error } = await supabase
+            .from('orders')
+            .update(updates)
+            .eq('id', orderId)
+            .select('id, order_completed, order_completed_at')
+            .maybeSingle();
+        if (error) {
+            console.error('[admin-orders] patch', error);
+            return res.status(500).json({ error: friendlyDbError(error) });
+        }
+        if (!data) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+        return res.status(200).json({ ok: true, order: data });
+    }
+    return res.status(405).json({ error: 'Method not allowed' });
+}

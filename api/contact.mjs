@@ -1,8 +1,10 @@
+import { database, readBody, enforceOrigin, rateLimit, json } from '../server/v3/http.mjs'
+import { CheckoutError } from '../server/v3/checkout.mjs'
 import { Resend } from 'resend'
-import { validateGmailEmail } from './lib/gmail-email.mjs'
-import { isResendTestSender, resolveStoreInbox } from './lib/resend-email-limit.mjs'
-import { escapeHtml, resolveSiteBaseUrl, emailShell } from './lib/email-brand.mjs'
-import { telHrefFromPakistanRaw } from './lib/pakistan-phone.mjs'
+import { validateGmailEmail } from '../server/shared/gmail-email.mjs'
+import { isResendTestSender, resolveStoreInbox } from '../server/shared/resend-email-limit.mjs'
+import { escapeHtml, resolveSiteBaseUrl, emailShell } from '../server/shared/email-brand.mjs'
+import { telHrefFromPakistanRaw } from '../server/shared/pakistan-phone.mjs'
 
 function sendJson(res, status, payload) {
   res.statusCode = status
@@ -24,7 +26,7 @@ async function readJsonBody(req) {
   return JSON.parse(raw)
 }
 
-export default async function handler(req, res) {
+async function contactHandler(req, res) {
   const origin = process.env.ALLOWED_ORIGIN || '*'
   res.setHeader('Access-Control-Allow-Origin', origin)
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -128,4 +130,14 @@ export default async function handler(req, res) {
     console.error('[contact] handler error', error)
     return sendJson(res, 500, { error: 'Failed to send message. Please try again.' })
   }
+}
+
+export default async function handler(req,res) {
+  if(req.method!=='POST')return json(res,405,{error:'Method not allowed'})
+  try {
+    enforceOrigin(req);req.body=await readBody(req)
+    for(const key of ['name','email','phone','company','subject','message'])if(String(req.body[key]??'').length>(key==='message'?5000:500))throw new CheckoutError('A form field is too long.')
+    await rateLimit(req,database(),'contact',5)
+    return contactHandler(req,res)
+  }catch(error){return json(res,error instanceof CheckoutError?error.status:503,{error:error instanceof CheckoutError?error.message:'Message service is temporarily unavailable.'})}
 }

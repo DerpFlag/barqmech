@@ -1,0 +1,80 @@
+.shinobi-shell.shinobi-shell {
+  --edge-radius:8px;
+  --panel-radius:14px;
+  --motion-ease:cubic-bezier(.22,1,.36,1);
+  --palette-line:#171b2029;
+}
+html.shinobi-section-scroll { scroll-behavior:auto; }
+.shinobi-shell :is(button,input,textarea,select) { font-family:var(--ff-body); }
+.shinobi-shell .shinobi-fixed-video__grain { display:none; }
+.shinobi-shell :is(.shinobi-icon-btn,.shinobi-nav-link,.shinobi-cat-link,.shinobi-cart-btn) {
+  font-family:var(--ff-body); font-size:13px; font-weight:600;
+  letter-spacing:normal; text-transform:none;
+}
+.shinobi-shell .shinobi-header { backdrop-filter:none; -webkit-backdrop-filter:none; }
+.shinobi-shell .shinobi-header--solid { box-shadow:0 1px 0 #171b201a; }
+.shinobi-shell.shinobi-shell :is(.cut-button,.mosaic-discover-btn,.product-detail-btn,.checkout-submit-btn,.cart-drawer-checkout-primary) {
+  clip-path:none; border-radius:var(--edge-radius); border:1px solid #171b2026;
+  min-height:48px; font-size:15px; line-height:1.4; font-weight:600;
+  transform:none; filter:none;
+  transition:background-color .2s ease,box-shadow .2s ease,border-color .2s ease;
+  box-shadow:0 1px 1px #171b2010;
+}
+.shinobi-shell.shinobi-shell :is(.cut-button,.mosaic-discover-btn,.product-detail-btn,.checkout-submit-btn,.cart-drawer-checkout-primary):hover {
+  transform:none; filter:none; box-shadow:0 3px 10px #171b201a; border-color:#171b2059;
+}
+.shinobi-shell .cut-button > span { transition:transform .25s var(--motion-ease); }
+.shinobi-shell .cut-button:hover > span { transform:translate(2px,-2px); }
+.shinobi-shell :is(a,button,input,select,textarea):focus-visible { outline:2px solid #2367b5; outline-offset:4px; }
+.shinobi-shell .home-chapter { font-weight:500; }
+.shinobi-shell .home-chapter :is(p,small) { font-weight:500; }
+.shinobi-shell .home-chapter p { line-height:1.65; }
+.shinobi-shell .category-sample :is(h3,small) { transform:none; }
+.shinobi-shell .category-sample__description { font-size:14px; line-height:1.55; }
+.shinobi-shell .category-sample__count { font-size:13px; opacity:1; color:var(--palette-muted); }
+.shinobi-shell .category-sample__photo :is(img,video) { filter:none; border-radius:var(--edge-radius); }
+.shinobi-shell .category-sample:hover :is(img,video) { transform:none; }
+.shinobi-shell .category-sample__arrow { right:4px; bottom:4px; border:1px solid #171b2026; }
+.shinobi-shell .metal-loop__track { animation-duration:34s; }
+.shinobi-shell .metal-loop__group > span:nth-child(2) { -webkit-text-stroke-width:1px; }
+.shinobi-shell .metal-rooms--mosaic .space-tile { border-radius:var(--edge-radius); overflow:hidden; transform:none; }
+.shinobi-shell .metal-rooms--mosaic .space-tile:hover { transform:none; }
+.shinobi-shell .space-photo-slide { transition:opacity .65s ease; }
+.shinobi-shell .space-tile__image::after { z-index:1; }
+.shinobi-shell .metal-rooms--mosaic .space-tile__caption { z-index:2; }
+.shinobi-shell .space-tile__caption h3 { text-shadow:0 1px 4px #0008; }
+.shinobi-shell .edit-product { animation:v2-edit-in .24s ease both; }
+.shinobi-shell .edit-product:nth-child(n) { animation-delay:0s; }
+@keyframes v2-edit-in { from { opacity:0; } to { opacity:1; } }
+.shinobi-shell .edit-product:hover img { transform:none; }
+.shinobi-shell .collection-index button { transition:background-color .2s ease,border-color .2s ease; }
+.shinobi-shell .collection-index button[aria-pressed=true] { transform:none; }
+.shinobi-shell .workshop-path > :is(a,button) { margin-left:0; }
+.shinobi-shell .workshop-path > :hover span { transform:none; }
+.shinobi-shell .workshop-path small { font-size:14px; line-height:1.6; }
+.shinobi-shell .metal-footer :is(p,a) { font-weight:500; }
+.shinobi-shell.shinobi-shell--commerce :is(.products-sidebar,.product-detail-gallery-wrap,.product-detail-support,.product-detail-tabs,.checkout-panel) {
+  border-radius:var(--panel-radius); border:1px solid var(--palette-line);
+}
+.shinobi-shell.shinobi-shell--commerce .shinobi-listing-card { transform:none; transition:none; }
+.shinobi-shell.shinobi-shell--commerce .shinobi-listing-card:hover { transform:none; }
+.shinobi-shell.shinobi-shell--commerce .shinobi-listing-card :is(.shop-route-image-stack,.shop-route-image) { transform:none; }
+.shinobi-shell.shinobi-shell--commerce .product-detail-title { line-height:1.12; letter-spacing:-.025em; }
+.shinobi-shell.shinobi-shell--commerce :is(.product-detail-lead,.product-detail-delivery,.product-detail-tab-panel,.product-detail-support-text) { font-weight:500; line-height:1.65; }
+.shinobi-shell.shinobi-shell--commerce :is(.product-detail-pill,.product-detail-check-option,.product-detail-tab,.products-pagination button) { border-radius:var(--edge-radius); }
+.shinobi-shell.shinobi-shell--commerce :is(.checkout-input,.checkout-textarea,.checkout-select) { border-radius:var(--edge-radius); }
+.shinobi-shell .cart-drawer :is(p,a,button,span,strong) { font-family:var(--ff-body); }
+.shinobi-shell .cart-drawer-item { border-radius:var(--edge-radius); }
+
+@media (max-width:767px) {
+  .shinobi-shell .shinobi-icon-btn { font-size:12px; }
+  .shinobi-shell .shinobi-cart-btn { font-size:12px; }
+  .shinobi-shell .shinobi-cat-link { font-size:12px; }
+  .shinobi-shell .home-chapter p { font-size:15px; }
+  .shinobi-shell .home-chapter :is(input,textarea) { font-size:16px; }
+  .shinobi-shell .home-chapter .cut-button { font-size:15px; }
+  .shinobi-shell .collection-index button { min-height:76px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .shinobi-shell *, .shinobi-shell *::before, .shinobi-shell *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+}

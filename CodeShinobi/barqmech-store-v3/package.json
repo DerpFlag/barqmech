@@ -1,0 +1,33 @@
+{
+  "name": "barqmech-store-v3",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/check-deploy.mjs && node scripts/build-catalog.mjs && tsc -b && vite build && node scripts/prerender.mjs && node scripts/check-artifacts.mjs",
+    "preview": "vite preview",
+    "test:cart": "node --experimental-strip-types --test --experimental-test-isolation=none tests/cart-storage.test.mjs",
+    "predev": "node scripts/build-catalog.mjs",
+    "test:checkout": "node --experimental-test-isolation=none --test tests/checkout.test.mjs",
+    "test:catalog": "node --experimental-test-isolation=none --test tests/catalog.test.mjs",
+    "test": "node --experimental-strip-types --experimental-test-isolation=none --test tests/cart-storage.test.mjs tests/catalog.test.mjs tests/checkout.test.mjs tests/server-config.test.mjs tests/admin.test.mjs tests/local-admin.test.mjs tests/listings.test.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.14.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.10"
+  }
+}

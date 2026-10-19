@@ -1,0 +1,5 @@
+@font-face { font-family:'DM Sans'; src:url('./assets/fonts/dm-sans-latin-variable.woff2') format('woff2'); font-style:normal; font-weight:400 900; font-display:swap; }
+@font-face { font-family:'Archivo Black'; src:url('./assets/fonts/archivo-black-latin.woff2') format('woff2'); font-style:normal; font-weight:400; font-display:swap; }
+.shinobi-shell.shinobi-shell { --ff-body:'DM Sans',Arial,sans-serif; --ff-display:'Archivo Black','DM Sans',Arial,sans-serif; --ff-mono:'DM Sans',Arial,sans-serif; font-family:var(--ff-body); font-synthesis:none; }
+.shinobi-shell :is(button,input,select,textarea) { font-family:var(--ff-body); }
+.shinobi-shell .home-chapter h2 { font-weight:400; letter-spacing:-.035em; }

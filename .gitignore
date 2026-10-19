@@ -1,4 +1,6 @@
 # Secrets (never commit)
+supabase_keys.txt
+**/supabase_keys.txt
 Media/Keys.txt
 
 # CAD / source art not imported by the storefront (very large)
@@ -47,3 +49,19 @@ Thumbs.db
 # TypeScript build info
 **/.tmp/
 **/*.tsbuildinfo
+
+# V3 publication: credentials and operational exports are not catalog inputs.
+Media/keys_new.txt
+Media/*[Kk]eys*.txt
+Media/catalog_products.csv
+Media/catalog_variants.csv
+Media/order_products.csv
+Media/orders.csv
+_contact-test.json
+**/.cache/
+# Old design packs and snapshots are local references; publish the active V3 sources explicitly.
+AUTONOMOUS_VIBE_RECONCILED_V4_PACK.zip
+
+**/.env.*
+!**/.env.example
+Media/html.txt

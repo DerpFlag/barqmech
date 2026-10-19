@@ -1,0 +1,37 @@
+{
+  "src\\assets\\optimized\\hero-desktop.mp4": {
+    "bytes": 6265765,
+    "audio": false,
+    "fastStart": true
+  },
+  "src\\assets\\optimized\\hero-mobile.mp4": {
+    "bytes": 2248271,
+    "audio": false,
+    "fastStart": true
+  },
+  "src\\assets\\optimized\\collection\\artwork.mp4": {
+    "bytes": 844177,
+    "audio": false,
+    "fastStart": true
+  },
+  "src\\assets\\optimized\\collection\\custom-utility.mp4": {
+    "bytes": 888075,
+    "audio": false,
+    "fastStart": true
+  },
+  "src\\assets\\optimized\\collection\\islamic.mp4": {
+    "bytes": 902350,
+    "audio": false,
+    "fastStart": true
+  },
+  "src\\assets\\optimized\\collection\\panels.mp4": {
+    "bytes": 966176,
+    "audio": false,
+    "fastStart": true
+  },
+  "productImages": {
+    "files": 2625,
+    "bytes": 153803970,
+    "largest": 302350
+  }
+}
