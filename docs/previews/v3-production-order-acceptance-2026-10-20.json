@@ -1,0 +1,23 @@
+{
+  "production_origin": "https://barqmech.vercel.app",
+  "real_order_persisted": true,
+  "two_owner_only_emails_provider_accepted": true,
+  "order_clearly_marked_do_not_fulfill": true,
+  "test_order_marked_completed": true,
+  "idempotent_retry_same_order_no_extra_sends": true,
+  "changed_retry_rejected": true,
+  "private_receipt_minimal_and_tamper_rejected": true,
+  "shipping_charged_once_pkr": 1400,
+  "black_finish_both_lines": true,
+  "merchant_selected_artwork_dxf_download_sha256_match": true,
+  "panel_manual_notice": true,
+  "customer_cad_links_absent": true,
+  "email_image_head_checks": 6,
+  "retry_worker_pending_orders": 0,
+  "inbox_rendering_not_observed": true,
+  "provider_matching_test_email_count": 2,
+  "provider_events": [
+    "delivered",
+    "delivered"
+  ]
+}

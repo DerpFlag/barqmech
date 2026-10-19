@@ -24,7 +24,7 @@ def bypass():
 def revoke():
  path=ROOT/'.cache/vercel-release-bypass.env'
  secret=path.read_text(encoding='utf-8').split('=',1)[1].strip()
- api('/v1/projects/'+PROJECT+'/protection-bypass?teamId='+TEAM,{'revoke':{'secret':secret}},method='PATCH')
+ api('/v1/projects/'+PROJECT+'/protection-bypass?teamId='+TEAM,{'revoke':{'secret':secret,'regenerate':False}},method='PATCH')
  path.unlink()
  print(json.dumps({'temporary_bypass_revoked':True}))
 def status():

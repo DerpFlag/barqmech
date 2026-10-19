@@ -430,3 +430,10 @@ Removed Discover buttons from all seven In your space tiles and deleted unused b
 - Configured existing Vercel project and verified order/contact sender. Published release branch/PR and recovery tag;42 tests and actual Preview route/admin/catalog/media/rejection checks pass.
 - Fixed deployed admin module startup through explicit ESM, malformed cookies, foreign-origin admin mutations and slow stale-edit RPC responses. Added migration015 for PT409 conflicts.
 - Configured encrypted GitHub notification retry secrets and verified encrypted backup including live listings. Production/email acceptance still pending at this entry.
+
+
+## 2026-10-20 — V3 production release
+
+- Merged PR1 and deployed V3.42 tests/CI pass. Real production owner-only mixed order/email/receipt/private-DXF/idempotency test passed; both emails delivered. QA order marked completed and DO NOT FULFILL;20 historical orders preserved.
+- Reviewed desktop/mobile cart/checkout, default Black finish, media delivery and hero/offscreen playback state; saved screenshots and aggregate evidence. Temporary browser cart item removed.
+- Revoked temporary Preview bypass; configured verified www/bare/Vercel domains and canonical www origin for the follow-up build. Previous deployment, source database and recovery tag retained. No broad device/performance or inbox visual certification claimed.
