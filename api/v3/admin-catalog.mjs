@@ -1,4 +1,4 @@
-import {getAdminTokenFromReq,verifyAdminToken} from '../../server/shared/admin-auth.ts'
+import {getAdminTokenFromReq,verifyAdminToken} from '../../server/shared/admin-auth.mjs'
 import {database,json,enforceOrigin,readBody,rateLimit} from '../../server/v3/http.mjs'
 import {readListings,saveListing} from '../../server/v3/live-catalog.mjs'
 export default async function handler(req,res){

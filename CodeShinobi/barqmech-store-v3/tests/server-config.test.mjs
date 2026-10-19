@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createAdminToken,verifyAdminToken } from '../../../server/shared/admin-auth.ts'
+import { createAdminToken,verifyAdminToken } from '../../../server/shared/admin-auth.mjs'
 import { resolveSiteBaseUrl } from '../../../server/shared/email-brand.mjs'
 import { rateLimit,enforceOrigin } from '../../../server/v3/http.mjs'
 
@@ -90,4 +90,34 @@ test('distributed rate limit hashes IP, rejects exhausted quota and fails closed
  assert.equal(calls[0].p_key.includes('192.0.2.1'),false)
  await assert.rejects(rateLimit(req,{rpc:async()=>({data:false})},'checkout',10),error=>error.status===429)
  await assert.rejects(rateLimit(req,{rpc:async()=>({error:{message:'missing function'}})},'checkout',10),error=>error.status===503)
+})
+
+
+test('deploy gate permits Preview test sender and rejects it for production',async()=>{
+ const {spawnSync}=await import('node:child_process')
+ const {fileURLToPath}=await import('node:url')
+ const script=fileURLToPath(new URL('../scripts/check-deploy.mjs',import.meta.url))
+ const env={...process.env,VERCEL:'1',CATALOG_SOURCE:'supabase',SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'fixture-only',ORDER_RECEIPT_SECRET:'fixture-secret-at-least-thirty-two-characters',ADMIN_SESSION_SECRET:'fixture-secret-at-least-thirty-two-characters',PUBLIC_SITE_URL:'https://example.test',RESEND_API_KEY:'fixture-only',ORDER_FROM_EMAIL:'Store <onboarding@resend.dev>',ORDER_NOTIFY_EMAIL:'owner@example.test',ADMIN_PASSWORD:'fixture-only'}
+ const run=environment=>spawnSync(process.execPath,[script],{env:{...env,VERCEL_ENV:environment},encoding:'utf8'})
+ assert.equal(run('preview').status,0)
+ const production=run('production')
+ assert.notEqual(production.status,0)
+ assert.ok(production.stderr.includes('verified sender domain'))
+})
+
+
+test('deployed admin ESM modules boot and reject unsigned access without a database',async()=>{
+ const session=(await import('../../../api/admin-session.mjs')).default
+ const orders=(await import('../../../api/admin-orders.mjs')).default
+ const catalog=(await import('../../../api/v3/admin-catalog.mjs')).default
+ await import('../../../api/admin-login.mjs');await import('../../../api/admin-logout.mjs')
+ const invoke=async(handler,cookie='')=>{
+  let result;const res={statusCode:200,setHeader(){},status(value){this.statusCode=value;return this},json(value){result=value;return this},end(value){result=JSON.parse(value)}}
+  await handler({method:'GET',headers:{cookie},url:'/api/admin-session'},res)
+  return {status:res.statusCode,body:result}
+ }
+ assert.deepEqual(await invoke(session),{status:200,body:{ok:false}})
+ assert.deepEqual(await invoke(session,'barqmech_admin=%E0%A4%A'),{status:200,body:{ok:false}})
+ assert.equal((await invoke(orders)).status,401)
+ assert.equal((await invoke(catalog)).status,401)
 })

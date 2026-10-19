@@ -13,8 +13,26 @@ def api(path,body=None,method=None):
  with urllib.request.urlopen(req,timeout=45) as response:return json.load(response)
 PROJECT='prj_oGANYuW3PYesrKzk4uSHmeT4yO8t'
 TEAM='team_rsiWJN4vLyKfxHOWmmBX2AXH'
+def bypass():
+ import secrets
+ path=ROOT/'.cache/vercel-release-bypass.env'
+ if path.exists():raise RuntimeError('A release bypass file already exists; inspect/revoke before creating another')
+ secret=secrets.token_hex(16)
+ api('/v1/projects/'+PROJECT+'/protection-bypass?teamId='+TEAM,{'generate':{'secret':secret,'note':'Temporary owner-authorized V3 acceptance; revoke after checks'}},method='PATCH')
+ path.write_text('VERCEL_AUTOMATION_BYPASS_SECRET='+secret+'\n',encoding='utf-8')
+ print(json.dumps({'temporary_bypass_created':True,'protection_retained':True,'revocation_required':True}))
+def revoke():
+ path=ROOT/'.cache/vercel-release-bypass.env'
+ secret=path.read_text(encoding='utf-8').split('=',1)[1].strip()
+ api('/v1/projects/'+PROJECT+'/protection-bypass?teamId='+TEAM,{'revoke':{'secret':secret}},method='PATCH')
+ path.unlink()
+ print(json.dumps({'temporary_bypass_revoked':True}))
+def status():
+ x=api('/v6/deployments?projectId='+PROJECT+'&teamId='+TEAM+'&limit=3')
+ for d in x.get('deployments',[]):print(json.dumps({'id':d['uid'],'url':d['url'],'state':d.get('state'),'sha':d.get('meta',{}).get('githubCommitSha')}))
 def diagnose():
- events=api('/v3/deployments/dpl_79gk14TeynU1vAw9J6tsHut7cYm4/events?teamId='+TEAM+'&limit=500')
+ latest=api('/v6/deployments?projectId='+PROJECT+'&teamId='+TEAM+'&limit=1')['deployments'][0]['uid']
+ events=api('/v3/deployments/'+latest+'/events?teamId='+TEAM+'&limit=1000')
  (ROOT/'.cache/vercel-preview-build-events.json').write_text(json.dumps(events),encoding='utf-8')
  for event in events if isinstance(events,list) else events.get('events',[]):
   line=event.get('text') or event.get('payload',{}).get('text','')
@@ -47,7 +65,7 @@ def inspect():
  print(json.dumps({'project':{k:project.get(k) for k in ['name','rootDirectory','installCommand','buildCommand','outputDirectory','nodeVersion','ssoProtection']},'git':project.get('link'),'envs':[{'key':e['key'],'target':e.get('target'),'type':e.get('type')} for e in envs.get('envs',[])],'deployments':[{'uid':d['uid'],'url':d['url'],'state':d.get('state'),'target':d.get('target'),'ref':d.get('meta',{}).get('githubCommitRef'),'sha':d.get('meta',{}).get('githubCommitSha')} for d in deployments.get('deployments',[])]}))
 if __name__=='__main__':
  try:
-  if len(sys.argv)>1 and sys.argv[1] in ['configure','diagnose']:
+  if len(sys.argv)>1 and sys.argv[1] in ['configure','diagnose','status','bypass','revoke']:
    globals()[sys.argv[1]]();sys.exit(0)
   if len(sys.argv)>1 and sys.argv[1]=='inspect':
    inspect();sys.exit(0)
@@ -56,5 +74,8 @@ if __name__=='__main__':
   print(json.dumps({'projects':[{'id':p['id'],'name':p['name'],'accountId':p.get('accountId'),'rootDirectory':p.get('rootDirectory'),'framework':p.get('framework')} for p in x.get('projects',[])]}))
   if not x.get('projects'):
    y=api('/v2/teams?limit=100');print(json.dumps({'teams':[{'id':t['id'],'slug':t['slug']} for t in y.get('teams',[])]}))
- except urllib.error.HTTPError as e:print(json.dumps({'failed':True,'status':e.code}));sys.exit(1)
+ except urllib.error.HTTPError as e:
+  details=json.loads(e.read()).get('error',{})
+  print(json.dumps({'failed':True,'status':e.code,'code':details.get('code'),'message':re.sub(r'[A-Za-z0-9_-]{32,}','[redacted]',str(details.get('message','')))[:500]}));sys.exit(1)
  except Exception as e:print(json.dumps({'failed':True,'type':type(e).__name__}));sys.exit(1)
+
