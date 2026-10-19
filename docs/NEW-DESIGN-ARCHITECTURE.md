@@ -1,9 +1,9 @@
 # BarqMech new storefront — living architecture
 
-Last reviewed: **2026-10-19 (Asia/Karachi)**
+Last reviewed: **2026-10-20 (Asia/Karachi)**
 Active implementation: **V3** `CodeShinobi/barqmech-store-v3/` (separate motion study; V2 preserved)  
 Local previews: **V3** `http://localhost:5177/`; preserved **V2** `http://localhost:5176/`; unchanged **V1** `http://localhost:5175/`  
-Status: **Chosen stack: GitHub/Vercel public media + Supabase live tables and non-Panel DXFs. Panels remain orderable with manual DXF supply.38 regression tests pass; existing Supabase read-only inventory verified. V3 schema/seed, live email and production acceptance remain pending. No deployment, real order, storage deletion or database migration performed.**
+Status: **V3 release branch and draft PR published; production main unchanged. New Supabase project bymhkgakvotcqdgcllat bootstrapped with service-only catalog/order access, 346 live listings, 346 compatibility products/2470 variants, and 20 historical orders copied and compared. Non-Panel DXF transfer is incomplete: last progress 300/342 verified, then the process exited with an HTTPError; resume and verify inventory before acceptance. 39 regression tests pass locally in the release checkout. Vercel configuration, live email and end-to-end release acceptance remain pending. Original Supabase source is retained unchanged.**
 
 ## 0. Current V3 architecture — 2026-10-19 release preparation
 
@@ -1264,3 +1264,17 @@ Use controlled test data and nonproduction services for side-effecting verificat
 - **Validation:** frontend HTTP 200; new build failed with unresolved TypeScript `@store` imports. Source review identified issues listed above.
 - **Remaining:** live provider configuration, browser interaction/performance/accessibility, and controlled end-to-end integration checks; no fixes or external mutations performed.
 - **Next:** repair build configuration and rerun production build; update evidence/backlog here as work lands.
+
+
+### 2026-10-20 — New Supabase setup and Vercel access handoff
+
+User selected a newly created empty Supabase project after original-project management access was unavailable. The new target is `bymhkgakvotcqdgcllat`; older entries describing original-project setup as pending are historical. Bootstrap migration014 plus live catalog/reliability schema were applied to the new target. RLS/grant metadata confirms no anonymous table writes/reads; service access is available. Catalog and20 historical orders were imported and compared. Original project data/storage was not deleted or modified. Non-Panel private DXF migration reached300/342 individually downloaded/uploaded and SHA256-verified objects before an HTTPError; this is incomplete and must be resumed. Panels remain manual manufacturing-file supply. Public media remains GitHub/Vercel.
+
+Release branch `codex/v3-storefront-release` and draft PR1 exist; recovery tag `pre-v3-2026-10-19` preserves prior main. Initial CI tests passed but artifact validation exposed an omitted staged vercel.json; correction was pushed, latest CI result still needs verification. Preview-origin handling now accepts only exact Vercel-provided deployment hosts in Preview, with39 local regression tests passing; this latest correction still needs publishing. No production promotion or actual test emails yet.
+
+User offered Vercel API access. Official Vercel token documentation checked: request a short-lived token scoped to the existing BarqMech project (or owning team if project scope is unavailable), saved only as VERCEL_TOKEN in the already ignored local credentials file. Never commit this token or place it in public frontend variables. Pending: read token once saved, inspect existing project configuration, resume DXFs, finish deployment/functional/email verification, then release within existing authorization. No additional architecture change from this access discussion.
+
+
+### 2026-10-20 — Vercel token verified and V3 configuration applied
+
+Provided local Vercel token successfully accesses existing BarqMech project. Confirmed Git integration, production branch main, empty Root Directory and existing protected Preview policy. Earlier Preview failed because CATALOG_SOURCE was missing. Required V3 settings now point to new Supabase and are configured for Preview/Production; existing admin password/contact settings preserved. Node22 and V3 output directory configured. Current production deployment is unchanged; new builds consume these settings. Token/secret values never logged or committed. Non-Panel DXF safe resume running; final coverage pending. Next: verify latest branch CI/build, deployment APIs and controlled email acceptance before production cutover.
