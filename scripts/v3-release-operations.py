@@ -52,7 +52,7 @@ def crypt(data, decrypt=False):
 
 def backup():
     snapshot = {'project': PROJECT, 'schema': request(BASE + '/rest/v1/'), 'tables': {}}
-    for table in ('catalog_products', 'catalog_variants', 'orders'):
+    for table in ('catalog_products', 'catalog_variants', 'orders') + (('v3_storefront_listings',) if PROJECT=='bymhkgakvotcqdgcllat' else ()):
         rows = []
         for offset in range(0, 100000, 500):
             data = request(BASE + '/rest/v1/' + table + '?select=*&order=id&offset=' + str(offset) + '&limit=500')
@@ -122,6 +122,7 @@ if __name__ == '__main__':
         if action == 'backup': backup()
         elif action == 'prepare-schema': prepare()
         elif action == 'prepare-new-project': prepare_new()
+        elif action == 'backup-new-project': select_new_target(); backup()
         elif action == 'verify-new-project': select_new_target(); verify()
         elif action == 'verify-schema': verify()
         else: raise RuntimeError('Choose backup, prepare-schema or verify-schema')

@@ -78,4 +78,3 @@ if __name__=='__main__':
   details=json.loads(e.read()).get('error',{})
   print(json.dumps({'failed':True,'status':e.code,'code':details.get('code'),'message':re.sub(r'[A-Za-z0-9_-]{32,}','[redacted]',str(details.get('message','')))[:500]}));sys.exit(1)
  except Exception as e:print(json.dumps({'failed':True,'type':type(e).__name__}));sys.exit(1)
-

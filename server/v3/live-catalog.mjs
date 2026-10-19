@@ -27,7 +27,7 @@ export async function saveListing(db,body){
   const id=listing.id??randomUUID()
   if(!/^[0-9a-f-]{36}$/i.test(id))throw new CheckoutError('Invalid listing ID.',400)
   const {data,error}=await db.rpc('save_v3_storefront_listing',{p_id:id,p_revision:expectedRevision,p_document:{...validated,...listingStats(validated)}})
-  if(error){if(['23505','40001'].includes(error.code))throw new CheckoutError('This listing changed, or that URL already exists. Refresh before saving.',409);throw new CheckoutError('The listing could not be saved.',503)}
+  if(error){if(['23505','40001','PT409'].includes(error.code))throw new CheckoutError('This listing changed, or that URL already exists. Refresh before saving.',409);throw new CheckoutError('The listing could not be saved.',503)}
   const saved=Array.isArray(data)?data[0]:data
   if(!saved?.id||!Number.isSafeInteger(saved.revision))throw new CheckoutError('The save was not confirmed. Refresh this listing before retrying.',503)
   return saved

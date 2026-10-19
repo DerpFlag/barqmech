@@ -121,3 +121,18 @@ test('deployed admin ESM modules boot and reject unsigned access without a datab
  assert.equal((await invoke(orders)).status,401)
  assert.equal((await invoke(catalog)).status,401)
 })
+
+
+test('admin mutations reject a foreign origin before database access',async()=>{
+ const secret=process.env.ADMIN_SESSION_SECRET,origin=process.env.PUBLIC_SITE_URL
+ try{
+  process.env.ADMIN_SESSION_SECRET='fixture-admin-secret-at-least-32-characters';process.env.PUBLIC_SITE_URL='https://example.test'
+  const cookie=`barqmech_admin=${createAdminToken()}`
+  for(const [path,method] of [['admin-login','POST'],['admin-logout','POST'],['admin-orders','PATCH']]){
+   const handler=(await import(`../../../api/${path}.mjs`)).default
+   let result;const res={statusCode:200,setHeader(){},status(value){this.statusCode=value;return this},json(value){result=value;return this},end(value){result=JSON.parse(value)}}
+   await handler({method,headers:{origin:'https://foreign.test',cookie},body:{}},res)
+   assert.equal(res.statusCode,403);assert.ok(result.error.includes('origin'))
+  }
+ }finally{for(const [key,value] of [['ADMIN_SESSION_SECRET',secret],['PUBLIC_SITE_URL',origin]]){if(value===undefined)delete process.env[key];else process.env[key]=value}}
+})

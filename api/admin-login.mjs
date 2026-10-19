@@ -1,5 +1,5 @@
 import { CheckoutError } from '../server/v3/checkout.mjs';
-import { database, rateLimit } from '../server/v3/http.mjs';
+import { database, rateLimit, enforceOrigin } from '../server/v3/http.mjs';
 import getRawBody from 'raw-body';
 import { adminPasswordConfigured, adminPasswordOk, createAdminToken, setAdminCookieHeader, } from '../server/shared/admin-auth.mjs';
 function bodyFromParsedJson(raw) {
@@ -71,6 +71,7 @@ export default async function handler(req, res) {
         if (req.method !== 'POST') {
             return json(res, 405, { error: 'Method not allowed' });
         }
+        enforceOrigin(req);
         await rateLimit(req, database(), 'admin-login', 5);
         const body = await readLoginBody(req);
         const onVercel = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';

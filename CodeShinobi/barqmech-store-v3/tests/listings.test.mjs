@@ -79,7 +79,7 @@ test('catalog writes derive price summary and translate revision conflicts',asyn
  let args
  const saved=await saveListing({rpc:async(_,value)=>{args=value;return {data:{...value.p_document,id:value.p_id,revision:2}}}},{listing:draft,expectedRevision:1})
  assert.equal(saved.starting_price,5500);assert.equal(args.p_document.variants[0].pricing.sizes[0].areaSqFt,2.25)
- await assert.rejects(saveListing({rpc:async()=>({error:{code:'40001'}})},{listing:draft,expectedRevision:1}),error=>error.status===409)
+ for(const code of ['40001','PT409'])await assert.rejects(saveListing({rpc:async()=>({error:{code}})},{listing:draft,expectedRevision:1}),error=>error.status===409)
 })
 test('checkout uses live canonical prices and rejects disabled or changed items',()=>{
  const line={productId:original.id,slug:original.slug,designCode:1,size:'18 x 18',finish:'Black',quantity:1,unitPrice:5500}
