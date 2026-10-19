@@ -8,7 +8,16 @@ export function canonicalOrigin(){
   if(!configured && !process.env.VERCEL)return 'http://localhost:5177'
   try {const url=new URL(configured);if(url.protocol!=='https:' && !(url.hostname==='localhost'&&!process.env.VERCEL))throw Error();return url.origin}catch{throw new CheckoutError('Website origin is not configured.',503)}
 }
-export function enforceOrigin(req){const origin=req.headers.origin;if(!origin)return;const allowed=new Set([canonicalOrigin(),...(process.env.ALLOWED_ORIGINS??'').split(',').map(s=>s.trim()).filter(Boolean)]);if(!allowed.has(origin))throw new CheckoutError('Request origin not allowed.',403)}
+export function enforceOrigin(req){
+  const origin=req.headers.origin;if(!origin)return
+  const allowed=new Set([canonicalOrigin(),...(process.env.ALLOWED_ORIGINS??'').split(',').map(s=>s.trim()).filter(Boolean)])
+  // Preview deployments may use production image/email URLs, but their own exact
+  // Vercel-provided origins must still be able to submit forms during acceptance.
+  if(process.env.VERCEL_ENV==='preview')for(const host of [process.env.VERCEL_URL,process.env.VERCEL_BRANCH_URL]){
+    if(host&&/^[a-z0-9.-]+\.vercel\.app$/i.test(host))allowed.add(`https://${host}`)
+  }
+  if(!allowed.has(origin))throw new CheckoutError('Request origin not allowed.',403)
+}
 export async function readBody(req,limit=32768){
   if(Number(req.headers['content-length'])>limit)throw new CheckoutError('Request is too large.',413)
   if(!String(req.headers['content-type']??'').includes('application/json'))throw new CheckoutError('Use JSON request data.',415)

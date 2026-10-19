@@ -2,7 +2,21 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createAdminToken,verifyAdminToken } from '../../../server/shared/admin-auth.ts'
 import { resolveSiteBaseUrl } from '../../../server/shared/email-brand.mjs'
-import { rateLimit } from '../../../server/v3/http.mjs'
+import { rateLimit,enforceOrigin } from '../../../server/v3/http.mjs'
+
+test('only exact provider preview origins are allowed and only in Preview',()=>{
+ const names=['VERCEL_ENV','VERCEL_URL','VERCEL_BRANCH_URL','PUBLIC_SITE_URL','ALLOWED_ORIGINS']
+ const saved=Object.fromEntries(names.map(key=>[key,process.env[key]]))
+ try{
+  process.env.PUBLIC_SITE_URL='https://example.test';delete process.env.ALLOWED_ORIGINS
+  process.env.VERCEL_ENV='preview';process.env.VERCEL_URL='release-123.vercel.app';process.env.VERCEL_BRANCH_URL='release-branch.vercel.app'
+  enforceOrigin({headers:{origin:'https://release-123.vercel.app'}})
+  enforceOrigin({headers:{origin:'https://release-branch.vercel.app'}})
+  assert.throws(()=>enforceOrigin({headers:{origin:'https://attacker.vercel.app'}}),error=>error.status===403)
+  process.env.VERCEL_ENV='production'
+  assert.throws(()=>enforceOrigin({headers:{origin:'https://release-123.vercel.app'}}),error=>error.status===403)
+ }finally{for(const key of names){if(saved[key]===undefined)delete process.env[key];else process.env[key]=saved[key]}}
+})
 import { enrichLinesWithDxfDownloads } from '../../../server/v3/manufacturing.mjs'
 import { buildCustomerEmailHtml,buildMerchantEmailHtml } from '../../../server/v3/order-email.mjs'
 

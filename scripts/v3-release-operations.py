@@ -74,6 +74,30 @@ def backup():
 def query(sql, read_only=False):
     return request('https://api.supabase.com/v1/projects/' + PROJECT + '/database/query', {'query': sql, 'read_only': read_only}, True)
 
+def select_new_target():
+    global BASE, PROJECT
+    target={}
+    for line in (ROOT/'.cache/supabase-target.env').read_text(encoding='utf-8').splitlines():
+        if '=' in line:
+            key,value=line.split('=',1);target[key]=value
+    if target.get('SUPABASE_URL')!='https://bymhkgakvotcqdgcllat.supabase.co':raise RuntimeError('Unexpected fresh-project target')
+    CONFIG.update(target)
+    BASE=CONFIG['SUPABASE_URL'].rstrip('/')
+    PROJECT='bymhkgakvotcqdgcllat'
+
+def prepare_new():
+    select_new_target()
+    existing=query("select tablename from pg_tables where schemaname='public';",True)
+    if existing:raise RuntimeError('Fresh-project bootstrap refuses a nonempty database')
+    if not list((ROOT/'.cache/backups').glob('*/supabase-private.dpapi')):raise RuntimeError('Source recovery backup required')
+    names=('014_v3_empty_project_bootstrap.sql','012_v3_live_listings.sql','013_v3_nonbreaking_prepare.sql')
+    sql='begin;\n'+'\n'.join((ROOT/'store/supabase/migrations'/name).read_text(encoding='utf-8') for name in names)
+    # Reuse the established reporting view, with invoker security and service-only grants.
+    view=(ROOT/'store/supabase/migrations/007_order_dates_product_links_view.sql').read_text(encoding='utf-8').split('create or replace view public.order_products as',1)[1]
+    sql+='\ncreate or replace view public.order_products with(security_invoker=true) as'+view+"\nnotify pgrst,'reload schema';\ncommit;"
+    query(sql)
+    print(json.dumps({'fresh_schema_applied':True,'project':PROJECT,'old_project_changed':False}))
+
 def prepare():
     if not CONFIG.get('SUPABASE_ACCESS_TOKEN'): raise RuntimeError('Management token not configured')
     backups = list((ROOT / '.cache/backups').glob('*/supabase-private.dpapi'))
@@ -97,6 +121,8 @@ if __name__ == '__main__':
         action = sys.argv[1] if len(sys.argv) > 1 else ''
         if action == 'backup': backup()
         elif action == 'prepare-schema': prepare()
+        elif action == 'prepare-new-project': prepare_new()
+        elif action == 'verify-new-project': select_new_target(); verify()
         elif action == 'verify-schema': verify()
         else: raise RuntimeError('Choose backup, prepare-schema or verify-schema')
     except urllib.error.HTTPError as error:
