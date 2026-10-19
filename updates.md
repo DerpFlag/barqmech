@@ -437,3 +437,6 @@ Removed Discover buttons from all seven In your space tiles and deleted unused b
 - Merged PR1 and deployed V3.42 tests/CI pass. Real production owner-only mixed order/email/receipt/private-DXF/idempotency test passed; both emails delivered. QA order marked completed and DO NOT FULFILL;20 historical orders preserved.
 - Reviewed desktop/mobile cart/checkout, default Black finish, media delivery and hero/offscreen playback state; saved screenshots and aggregate evidence. Temporary browser cart item removed.
 - Revoked temporary Preview bypass; configured verified www/bare/Vercel domains and canonical www origin for the follow-up build. Previous deployment, source database and recovery tag retained. No broad device/performance or inbox visual certification claimed.
+
+
+Final2026-10-20 verification: production canonical/sitemap use www.barqmech.com; www/bare/Vercel origins accepted and foreign origins rejected. Main CI green. Both approved test messages show delivered; no further emails sent. Final domain evidence and architecture status updated.

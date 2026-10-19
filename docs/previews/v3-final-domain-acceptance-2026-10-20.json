@@ -1,0 +1,31 @@
+{
+  "production_commit": "d56930d2e92d3b3479827624ead26dd9aa2185cf",
+  "production_canonical": "https://www.barqmech.com/",
+  "form_origin_checks": [
+    {
+      "origin": "https://www.barqmech.com",
+      "invalid_order_status": 400,
+      "origin_accepted": true
+    },
+    {
+      "origin": "https://barqmech.com",
+      "invalid_order_status": 400,
+      "origin_accepted": true
+    },
+    {
+      "origin": "https://barqmech.vercel.app",
+      "invalid_order_status": 400,
+      "origin_accepted": true
+    }
+  ],
+  "foreign_order_origin_rejected": true,
+  "foreign_admin_logout_origin_rejected": true,
+  "invalid_contact_rejected_without_email": true,
+  "live_sitemap_canonical": true,
+  "github_checks": [
+    {
+      "name": "validate",
+      "conclusion": "success"
+    }
+  ]
+}
