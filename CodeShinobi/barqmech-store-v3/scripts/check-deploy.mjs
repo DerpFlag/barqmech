@@ -7,5 +7,5 @@ if(process.env.VERCEL){
   for(const key of ['ORDER_RECEIPT_SECRET','ADMIN_SESSION_SECRET'])if(process.env[key].length<32)throw Error(`${key} must be at least32 characters`)
   const origin=new URL(process.env.PUBLIC_SITE_URL)
   if(origin.protocol!=='https:' || origin.pathname!=='/' || origin.search || origin.hash)throw Error('PUBLIC_SITE_URL must be an HTTPS origin without a path or query')
-  if(process.env.ORDER_FROM_EMAIL.includes('@resend.dev'))throw Error('Use a verified sender domain for production order emails')
+  if(process.env.VERCEL_ENV==='production' && process.env.ORDER_FROM_EMAIL.includes('@resend.dev'))throw Error('Use a verified sender domain for production order emails')
 }
