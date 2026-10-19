@@ -1,0 +1,110 @@
+[
+  {
+    "path": "/products/islamic/islamic-ya-hayyu-ya-qayyum",
+    "status": 200,
+    "bytes": 2377,
+    "content_type": "text/html; charset=utf-8"
+  },
+  {
+    "path": "/api/v3/catalog?slug=islamic-ya-hayyu-ya-qayyum",
+    "status": 200,
+    "bytes": 928,
+    "content_type": "application/json"
+  },
+  {
+    "path": "/catalog-images/islamic-ya-hayyu-ya-qayyum/0-1200.webp",
+    "status": 200,
+    "bytes": 78808,
+    "content_type": "image/webp"
+  },
+  {
+    "path": "/products/artwork/artwork-flowers-6",
+    "status": 200,
+    "bytes": 2213,
+    "content_type": "text/html; charset=utf-8"
+  },
+  {
+    "path": "/api/v3/catalog?slug=artwork-flowers-6",
+    "status": 200,
+    "bytes": 849,
+    "content_type": "application/json"
+  },
+  {
+    "path": "/catalog-images/artwork-flowers-6/0-1200.webp",
+    "status": 200,
+    "bytes": 59516,
+    "content_type": "image/webp"
+  },
+  {
+    "path": "/products/panels/panels-door",
+    "status": 200,
+    "bytes": 2158,
+    "content_type": "text/html; charset=utf-8"
+  },
+  {
+    "path": "/api/v3/catalog?slug=panels-door",
+    "status": 200,
+    "bytes": 825,
+    "content_type": "application/json"
+  },
+  {
+    "path": "/catalog-images/panels-door/0-1200.webp",
+    "status": 200,
+    "bytes": 64760,
+    "content_type": "image/webp"
+  },
+  {
+    "path": "/products/misc/misc-elegant-fanoos-lantern",
+    "status": 200,
+    "bytes": 2387,
+    "content_type": "text/html; charset=utf-8"
+  },
+  {
+    "path": "/api/v3/catalog?slug=misc-elegant-fanoos-lantern",
+    "status": 200,
+    "bytes": 926,
+    "content_type": "application/json"
+  },
+  {
+    "path": "/catalog-images/misc-elegant-fanoos-lantern/0-1200.webp",
+    "status": 200,
+    "bytes": 86846,
+    "content_type": "image/webp"
+  },
+  {
+    "path": "/assets/artwork-BzEJ1_5j.mp4",
+    "status": 206,
+    "range_bytes": 1024,
+    "content_range": "bytes 0-1023/844177"
+  },
+  {
+    "path": "/assets/custom-utility-D6qIgpIk.mp4",
+    "status": 206,
+    "range_bytes": 1024,
+    "content_range": "bytes 0-1023/888075"
+  },
+  {
+    "path": "/assets/hero-desktop-BMeVnUMh.mp4",
+    "status": 206,
+    "range_bytes": 1024,
+    "content_range": "bytes 0-1023/6265765"
+  },
+  {
+    "path": "/assets/hero-mobile-BKl-M_Tj.mp4",
+    "status": 206,
+    "range_bytes": 1024,
+    "content_range": "bytes 0-1023/2248271"
+  },
+  {
+    "path": "/assets/islamic-D7SBTVrw.mp4",
+    "status": 206,
+    "range_bytes": 1024,
+    "content_range": "bytes 0-1023/902350"
+  },
+  {
+    "path": "/assets/panels-CBxhmyzk.mp4",
+    "status": 206,
+    "range_bytes": 1024,
+    "content_range": "bytes 0-1023/966176"
+  }
+]

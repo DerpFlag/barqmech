@@ -422,3 +422,11 @@ Removed Discover buttons from all seven In your space tiles and deleted unused b
 **Skill:** `.cursor/skills/barqmech-updates/SKILL.md` — append to this file after catalog/Supabase/import work.
 
 **Data check:** Pricing in DB is valid (sample: sizes `12 x 24`, `18 x 36`, `24 x 48`, Silver ~9800–12800 PKR). `Media/Finalized/` was not in this workspace clone — re-import needs that tree + `prices_summary.csv` on disk.
+
+
+## 2026-10-20 — V3 backend and release preparation
+
+- Bootstrapped the user-selected new Supabase project with private live catalog/orders, imported346 listings and20 historical orders, and copied342 non-Panel DXFs with per-file SHA256 verification. Panels remain manual file supply; original project retained.
+- Configured existing Vercel project and verified order/contact sender. Published release branch/PR and recovery tag;42 tests and actual Preview route/admin/catalog/media/rejection checks pass.
+- Fixed deployed admin module startup through explicit ESM, malformed cookies, foreign-origin admin mutations and slow stale-edit RPC responses. Added migration015 for PT409 conflicts.
+- Configured encrypted GitHub notification retry secrets and verified encrypted backup including live listings. Production/email acceptance still pending at this entry.

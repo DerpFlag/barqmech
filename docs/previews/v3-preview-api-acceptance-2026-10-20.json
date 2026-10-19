@@ -1,0 +1,9 @@
+{
+  "authenticated_session": true,
+  "historical_order_count": 20,
+  "authenticated_catalog_count": 346,
+  "listing_create_update_disable_archive_and_stale_revision": "passed",
+  "price_tamper_and_disabled_checkout": "rejected",
+  "fixture_removed": true,
+  "orders_after_no_email_tests": 20
+}
