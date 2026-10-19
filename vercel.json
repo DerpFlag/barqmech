@@ -1,12 +1,28 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm install && cd store && npm install",
-  "buildCommand": "cd store && npm run build",
-  "outputDirectory": "store/dist",
+  "installCommand": "npm ci && npm --prefix store ci && npm --prefix CodeShinobi/barqmech-store-v3 ci",
+  "buildCommand": "npm --prefix CodeShinobi/barqmech-store-v3 run build",
+  "outputDirectory": "CodeShinobi/barqmech-store-v3/dist",
   "images": {
-    "sizes": [120, 240, 480, 640, 1100, 1920, 2400],
-    "qualities": [72, 78, 82, 88],
-    "formats": ["image/webp", "image/avif"],
+    "sizes": [
+      120,
+      240,
+      480,
+      640,
+      1100,
+      1920,
+      2400
+    ],
+    "qualities": [
+      72,
+      78,
+      82,
+      88
+    ],
+    "formats": [
+      "image/webp",
+      "image/avif"
+    ],
     "minimumCacheTTL": 86400,
     "remotePatterns": [
       {
@@ -16,30 +32,50 @@
       }
     ]
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/assets/:path*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
+      "src": "/assets/(.*)",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "continue": true
     },
     {
-      "source": "/((?!assets/)(?!api/).*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
+      "src": "/catalog/([a-f0-9]{16})/(.*)",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "continue": true
+    },
+    {
+      "src": "/(.*)",
+      "headers": {
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "no-referrer",
+        "X-Frame-Options": "DENY"
+      },
+      "continue": true
+    },
+    {
+      "src": "/sitemap.xml",
+      "dest": "/api/v3/sitemap"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/products/[^/]+/[^/]+/?",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/404.html",
+      "status": 404
     }
-  ]
+  ],
+  "functions": {
+    "api/place-order.mjs": {
+      "includeFiles": "CodeShinobi/barqmech-store-v3/catalog/*.csv"
+    }
+  }
 }
