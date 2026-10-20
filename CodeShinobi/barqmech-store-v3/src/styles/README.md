@@ -1,6 +1,6 @@
 # V3 stylesheet ownership
 
-`main.tsx` imports only `storefront.css`. Its ordered imports own the public storefront cascade. The isolated lazy admin route imports `admin/styles.css`, preserving admin.css then listings.css order without downloading those rules on ordinary storefront visits. Its selectors remain scoped to administration. Keep both entry orders intentional.
+`main.tsx` imports only `storefront.css`. Its ordered imports own the public storefront cascade. The isolated lazy admin route imports `admin/styles.css`, preserving admin.css then listings.css then surfaces.css order without downloading those rules on ordinary storefront visits. Its selectors remain scoped to administration. Keep both entry orders intentional.
 
 | File | Edit here for |
 | --- | --- |
@@ -12,6 +12,8 @@
 | `../components/metal-playground.css` | Footer shape overlay. |
 | `../refinement.css`, `../commerce-gallery.css` | Shared finish/edge rules and commerce gallery/drawer refinements. |
 | `../typography.css`, `../studio-motion.css` | Local font faces/type tokens and opt-in motion/reduced-motion behavior. |
+| `../surface-patterns.css` | Shared responsive wave paint variables and home/commerce surfaces. Home header artwork fades through data-home-section; commerce viewport artwork continues behind transparent navigation. Last public import. |
+| `../admin/surfaces.css` | Lazy admin-only wave surfaces and translucent field/editor/top-bar treatment; reuses shared paint variables. |
 | `../admin/admin.css` | Lazy admin/styles.css entry only: V3 studio desk/login, scoped to a-root and a- classes. |
 | `../admin/listings.css` | Lazy admin/styles.css entry only: Orders/Listings navigation and responsive forms. Public catalog-live-notice rules live in refinement.css so errors stay styled before any admin visit. |
 

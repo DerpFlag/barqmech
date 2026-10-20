@@ -96,6 +96,7 @@ export function useHomeSections(root: RefObject<HTMLElement | null>, advanceWith
           lastIndex = index
           if (shell) {
             shell.dataset.homeTone = list[index]?.dataset.sectionTheme ?? 'blue'
+            shell.dataset.homeSection = list[index]?.id ?? 'home'
             shell.dataset.atFooter = String(index === list.length - 1)
           }
         }
@@ -189,7 +190,7 @@ export function useHomeSections(root: RefObject<HTMLElement | null>, advanceWith
     window.addEventListener('wheel', onWheel, { passive: false })
     window.addEventListener('keydown', onKey)
     return () => {
-      if (shell) { delete shell.dataset.homeTone; delete shell.dataset.atFooter }
+      if (shell) { delete shell.dataset.homeTone; delete shell.dataset.homeSection; delete shell.dataset.atFooter }
       observer.disconnect()
       cancelAnimationFrame(frame)
       cancelAnimationFrame(resizeFrame)

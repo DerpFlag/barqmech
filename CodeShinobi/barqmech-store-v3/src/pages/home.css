@@ -235,7 +235,7 @@ html.shinobi-section-scroll { scroll-padding-top: var(--home-header-height, 140p
 .shinobi-shell--home[data-home-tone=orange] { --nav-ink:#472518; --nav-surface:#ff8658; --nav-accent:#78351e; --nav-on-accent:#ffe0ce; }
 .shinobi-shell--home[data-home-tone=pink] { --nav-ink:#63283f; --nav-surface:#f7c9ac; --nav-accent:#873a56; --nav-on-accent:#ffe4db; }
 .shinobi-shell--home[data-home-tone=lilac] { --nav-ink:#433653; --nav-surface:#e4d8f4; --nav-accent:#65487e; --nav-on-accent:#f5eaff; }
-.shinobi-shell--home[data-home-tone]:not([data-home-tone=blue]) .shinobi-header { background:var(--nav-surface); color:var(--nav-ink); border-bottom-color:color-mix(in srgb,var(--nav-ink) 18%,transparent); box-shadow:none; backdrop-filter:none; }
+.shinobi-shell--home[data-home-tone]:not([data-home-tone=blue]) .shinobi-header { background:transparent; color:var(--nav-ink); border-bottom-color:color-mix(in srgb,var(--nav-ink) 18%,transparent); box-shadow:none; }
 .shinobi-shell--home[data-home-tone]:not([data-home-tone=blue]) .shinobi-logo__wordmark { mix-blend-mode:multiply; }
 .shinobi-shell--home .shinobi-header :is(.shinobi-nav-link,.shinobi-icon-btn,.shinobi-cart-btn,.shinobi-cat-link,.product-search-input,.product-search-submit) { color:var(--nav-ink); }
 .shinobi-shell--home .shinobi-header :is(.product-search-form,.shinobi-cart-btn,.shinobi-icon-btn) { border-color:color-mix(in srgb,var(--nav-ink) 30%,transparent); background:color-mix(in srgb,var(--nav-ink) 4%,transparent); }

@@ -1,0 +1,150 @@
+/* User-supplied wave background study. Static, local and easy to revert.
+   Hero retains its video; blue and cream chapters use supplied artwork. */
+:root {
+  --wave-warm-art: url('./assets/backgrounds/cream-waves-1920.webp');
+  --wave-cool-art: url('./assets/backgrounds/blue-waves-1920.webp');
+  --wave-warm: linear-gradient(#fff5e626, #fff5e626), var(--wave-warm-art);
+  --wave-cool: linear-gradient(#d9eaf526, #d9eaf526), var(--wave-cool-art);
+  --surface-field: #ffffffb8;
+}
+.shinobi-home .home-chapter,
+.shinobi-shell--home .metal-footer {
+  --surface-art: var(--wave-cool-art);
+  --surface-wash: #d9eaf526;
+  isolation: isolate;
+  z-index: 2;
+  background: none;
+}
+
+.shinobi-home .home-chapter::before,
+.shinobi-home .home-chapter::after,
+.shinobi-shell--home .metal-footer::before,
+.shinobi-shell--home .metal-footer::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--home-header-height, 140px)) 0 0;
+  z-index: -1;
+  opacity: 1;
+  pointer-events: none;
+  clip-path: inset(var(--home-header-height, 140px) 0 0);
+  background-color: var(--palette-sky);
+  background-image: linear-gradient(var(--surface-wash), var(--surface-wash)), var(--surface-art);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Keep chapter artwork stable; fade only its matching header-sized extension. */
+.shinobi-home .home-chapter::after,
+.shinobi-shell--home .metal-footer::after {
+  clip-path: inset(0 0 calc(100% - var(--home-header-height, 140px)) 0);
+  opacity: 0;
+  transition: opacity .65s cubic-bezier(.22, 1, .36, 1);
+}
+
+.shinobi-home :is(.metal-categories, .metal-edit, .metal-contact) {
+  --surface-art: var(--wave-warm-art);
+  --surface-wash: #fff5e626;
+}
+
+/* Reveal only the current chapter's extension, protecting adjacent content. */
+.shinobi-shell--home[data-home-section=categories] #categories::after,
+.shinobi-shell--home[data-home-section=collections] #collections::after,
+.shinobi-shell--home[data-home-section=selected-pieces] #selected-pieces::after,
+.shinobi-shell--home[data-home-section=how-it-works] #how-it-works::after,
+.shinobi-shell--home[data-home-section=contact] #contact::after,
+.shinobi-shell--home[data-home-section=footer] #footer::after { opacity: 1; }
+
+/* Extend the artwork into the header while keeping the shape playground clipped. */
+.shinobi-shell.shinobi-shell--home .metal-footer { overflow: visible; }
+
+@media (max-width: 767px) {
+  :root {
+    --wave-warm-art: url('./assets/backgrounds/cream-waves-768.webp');
+    --wave-cool-art: url('./assets/backgrounds/blue-waves-768.webp');
+  }
+}
+
+/* Commerce uses one viewport-sized artwork behind both header and content.
+   A fixed decorative layer avoids stretching one image over a long catalog. */
+.shinobi-shell.shinobi-shell--commerce { isolation: isolate; background: none; }
+.shinobi-shell--commerce::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--wave-warm);
+  background-size: cover;
+  background-position: center;
+}
+.shinobi-shell.shinobi-shell--commerce :is(.shinobi-header, .shinobi-header.is-scrolled) {
+  background: transparent;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.shinobi-shell.shinobi-shell--commerce .metal-footer,
+.shinobi-shell.shinobi-shell--commerce :is(.checkout-cod-card, .checkout-success-cod-card, .checkout-order-code, .catalog-pricing-alert, .products-mobile-filter-panel, .products-mobile-filter-toggle),
+.shinobi-shell--commerce :is(.checkout-submit-error, .form-field-error, .product-detail-design-error),
+.shinobi-shell--commerce .checkout-layout > .checkout-panel:first-child,
+.shinobi-shell .cart-drawer-footer {
+  background-image: var(--wave-cool);
+  background-size: cover;
+  background-position: center;
+}
+.shinobi-shell--commerce .metal-footer::before { content: none; }
+.shinobi-shell .cart-drawer,
+.shinobi-shell--commerce .product-detail-lightbox,
+.shinobi-shell .shop-refine .products-sidebar-filters,
+body:has(.shinobi-shell) .product-search-dropdown {
+  background-image: var(--wave-warm);
+  background-size: cover;
+  background-position: center;
+}
+.shinobi-shell.shinobi-shell--commerce :is(.checkout-form-grid input, .checkout-form-grid textarea, .product-detail-design-input),
+.shinobi-shell--commerce :is(.checkout-line-img-wrap, .product-detail-qty, .cart-drawer-qty) {
+  background: var(--surface-field);
+}
+.shinobi-shell .cart-drawer-qty { background: var(--surface-field); }
+.admin-route-wait {
+  background-image: var(--wave-warm);
+  background-size: cover;
+  background-position: center;
+}
+.shinobi-shell .cart-drawer-header { background: transparent; }
+.shinobi-shell.shinobi-shell--commerce .cut-button {
+  background: var(--palette-blue);
+  color: var(--palette-ink);
+}
+.shinobi-shell.shinobi-shell--commerce .cut-button:hover {
+  background: var(--palette-blue-hover);
+}
+.shinobi-shell--commerce .checkout-success-email-warning {
+  background-image: var(--wave-cool);
+  background-size: cover;
+  color: var(--palette-ink);
+  border-color: var(--palette-line);
+}
+body:has(.shinobi-shell) .product-search-hit:is(:hover, .active) { background: #5aa7ff30; }
+.shinobi-shell.shinobi-shell--commerce .products-page .shinobi-listing-cat {
+  color: var(--palette-muted);
+  -webkit-text-fill-color: currentColor;
+}
+
+@media print, (forced-colors: active) {
+  :root { --wave-warm: none; --wave-cool: none; }
+  .shinobi-shell--commerce::before { display: none; }
+}
+
+@media print, (forced-colors: active) {
+  .shinobi-home .home-chapter::before,
+  .shinobi-shell--home .metal-footer::before { background-image: none; }
+  .shinobi-home .home-chapter::after,
+  .shinobi-shell--home .metal-footer::after { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shinobi-home .home-chapter::after,
+  .shinobi-shell--home .metal-footer::after { transition: none; }
+}

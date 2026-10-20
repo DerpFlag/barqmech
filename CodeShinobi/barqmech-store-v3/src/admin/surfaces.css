@@ -1,0 +1,40 @@
+/* Admin-only surface treatment; loaded with the lazy admin stylesheet. */
+.a-root.a-root { position: relative; isolation: isolate; background: none; }
+.a-root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--wave-warm);
+  background-size: cover;
+  background-position: center;
+}
+.a-root .a-top {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #ffffff0d;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.a-root :is(.a-login-story, .a-order.is-active, .l-card.is-selected, .a-notes) {
+  background-image: var(--wave-cool);
+  background-size: cover;
+  background-position: center;
+}
+.a-root .a-login-story { background-color: transparent; }
+.a-root .a-login-story h1 span { color: #145da9; }
+.a-root :is(.a-detail, .l-editor) {
+  background: #ffffff70;
+}
+.a-root :is(.a-login-form input, .l-fields input:not([type=checkbox]), .l-fields select, .l-fields textarea, .l-tools select) {
+  background: var(--surface-field);
+}
+.a-root :is(.a-line img, .a-image-empty) { background: #ffffff50; }
+.a-root :is(.a-order:hover, .l-card:hover) { background-color: #ffffff50; }
+.a-root :is(.a-intro, .a-result, .l-heading p, .l-card > div > span) { color: #353b42; }
+
+@media print, (forced-colors: active) {
+  .a-root::before { display: none; }
+}

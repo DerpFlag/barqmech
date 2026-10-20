@@ -477,3 +477,47 @@ Standalone delivery clarification: `BarqMech-Field-Guide.html` at the repository
 - Published reviewed source commit d55214c to GitHub main; Vercel automatic production deployment READY and GitHub validation successful. Includes performance work, corrected hero poster, centered clickable scroll cue, floating-control removal, receipt readability, deferred admin styles and standalone architecture guide.
 - Fresh locked installations,43 tests, production build and346-product artifact validation pass. Credential scan found0 configured secret matches across3763 tracked files. No backend/schema/env changes or new orders/emails.
 - Live canonical homepage, new styles/poster checksum,346-product catalog, product/admin routes and private-receipt rejection checked. Browser verified hero/cue/collection playback and no sampled overflow/console errors. Acceptance JSON and screenshot saved; recovery tag pre-v3-polish-2026-10-20 retains previous08ae4a7.
+
+## 2026-10-20 — Local V3 surface study
+
+Added static blue machining contours, perforations and rounded cut outlines across the five cream/sky home chapters. Mobile scaling, pointer-transparent layering and forced-color/print suppression included. Desktop/mobile sampled; build and346 product artifacts pass. Isolated stylesheet can be removed with one import; baseline saved in .cache/v3-surface-study-before-20261020. Local only, pending user review; no deployment or backend changes.
+
+
+## 2026-10-20 — Blue wave background study
+
+Replaced rejected thin-line experiment with user-supplied wave image on mosaic/workshop/home footer. Cream sections plain; hero preserved. Responsive WebP copies31.5kB/9.6kB, no extra motion. Build/artifact and sampled desktop/mobile checks pass; local only, not deployed.
+
+
+## 2026-10-20 — Warm cream background study
+
+Applied user-supplied gold/cream artwork to the three cream home chapters; optimized WebP13kB desktop/3.7kB mobile. Blue wave sections and hero retained. Production build/artifact checks and sampled desktop/mobile collection review pass. Local only, not deployed.
+
+
+## 2026-10-20 — Frosted home navigation
+
+Home header uses10px backdrop blur: transparent/white text on hero, neutral translucent frost/dark text below. Desktop/mobile sampled, build checked before final opacity adjustment. Local only; preserved headers on commerce/admin.
+
+
+## 2026-10-20 — Header transparency adjustment
+
+Reduced lower-home white tint78% to60%, retaining10px blur and dark navigation. Browser computed value checked; local only.
+
+
+## 2026-10-20 — Section-tinted navigation
+
+Replaced neutral white home header tint with current section cream/sky at60% opacity; retained blur/dark text and transparent hero. Fallback follows section color. Local only.
+
+
+## 2026-10-20 — Continuous header artwork
+
+Enlarged actual wave background upward behind the transparent blurred home navigation. Current-section clipping protects adjacent chapters; reuses existing section boundary observer, no new scroll listener. Desktop blue/mobile cream sampled; build/artifact checks pass before equivalent selector cleanup. Local only.
+
+
+## 2026-10-20 — Gradual header artwork transition
+
+Header extension now fades opacity over650ms at chapter changes; section artwork remains stable. Reduced motion removes fade. Computed transition checked locally; no new JS/listeners or deployment.
+
+
+## 2026-10-20 — Wave theme throughout V3
+
+Replaced flat page/panel surfaces across catalog/search/PDP/cart/checkout/receipt and admin login/orders/listings with supplied responsive warm/blue artwork. Transparent blurred navigation, readable translucent fields/editor panels and consistent blue receipt actions. Admin surfaces remain lazy. Final production build/346-product artifacts pass; sampled desktop/mobile review, temporary cart selection removed and labelled receipt fixture only. No backend/data/email or deployment changes; architecture and stylesheet ownership updated.
