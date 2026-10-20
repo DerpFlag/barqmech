@@ -13,18 +13,29 @@ export function useCatalogProducts(){return useCatalog().products}
 export function CatalogProvider({children}:{children:ReactNode}){
  const [products,setProducts]=useState<Product[]>(initial),[initializing,setInitializing]=useState(live),[error,setError]=useState<string|null>(null),[errors,setErrors]=useState<Record<string,string>>({})
  const details=useRef(new Map<string,Product>()),pending=useRef(new Map<string,Promise<void>>()),summary=useRef(initial),version=useRef<string>(browse.version),refreshPending=useRef<Promise<void>|null>(null)
- const refresh=useCallback(()=>{
+ const refreshedAt=useRef(-Infinity)
+ const applyDetails=useCallback(()=>setProducts(current=>{
+  let changed=false
+  const next=current.map(product=>{const detail=details.current.get(product.slug);if(detail&&detail!==product){changed=true;return detail}return product})
+  return changed?next:current
+ }),[])
+ const refresh=useCallback((force=false)=>{
   if(!live)return Promise.resolve()
   if(refreshPending.current)return refreshPending.current
+  // Hover/focus can fire repeatedly across cards. Explicit refresh, focus,
+  // broadcast invalidation and the 30s poll bypass this short reuse window.
+  if(!force&&performance.now()-refreshedAt.current<15000)return Promise.resolve()
   refreshPending.current=(async()=>{
    const response=await fetch('/api/v3/catalog',{cache:'no-store',signal:AbortSignal.timeout(15000)})
    if(!response.ok)throw Error('Catalog updates are temporarily unavailable. Please retry before ordering.')
    const data=await response.json() as {products:Product[];version:string}
    if(!Array.isArray(data.products)||typeof data.version!=='string')throw Error('Catalog response unavailable.')
    summary.current=data.products
+   refreshedAt.current=performance.now()
    if(version.current!==data.version){
     version.current=data.version
-    for(const [slug,p] of details.current)if(!data.products.some(next=>next.slug===slug&&next.revision===p.revision))details.current.delete(slug)
+    const revisions=new Map(data.products.map(product=>[product.slug,product.revision]))
+    for(const [slug,p] of details.current)if(!revisions.has(slug)||revisions.get(slug)!==p.revision)details.current.delete(slug)
     setProducts(data.products.map(p=>details.current.get(p.slug)??p))
    }
    setError(null)
@@ -33,7 +44,7 @@ export function CatalogProvider({children}:{children:ReactNode}){
  },[])
  useEffect(()=>{
   if(!live)return
-  const update=()=>{if(document.visibilityState==='visible')void refresh().catch(()=>{})}
+  const update=()=>{if(document.visibilityState==='visible')void refresh(true).catch(()=>{})}
   update();const timer=setInterval(update,30000)
   window.addEventListener('focus',update);document.addEventListener('visibilitychange',update)
   const channel=typeof BroadcastChannel!=='undefined'?new BroadcastChannel('barqmech-catalog'):null
@@ -41,11 +52,11 @@ export function CatalogProvider({children}:{children:ReactNode}){
   return()=>{clearInterval(timer);window.removeEventListener('focus',update);document.removeEventListener('visibilitychange',update);channel?.close()}
  },[refresh])
  const ensureProduct=useCallback(async(slug:string)=>{
-  setErrors(current=>{const next={...current};delete next[slug];return next})
+  setErrors(current=>{if(!current[slug])return current;const next={...current};delete next[slug];return next})
   try{
    if(live)await refresh()
    if(!summary.current.some(p=>p.slug===slug))return
-   if(details.current.has(slug)){setProducts(current=>current.map(p=>p.slug===slug?details.current.get(slug)!:p));return}
+   if(details.current.has(slug)){applyDetails();return}
    if(!pending.current.has(slug))pending.current.set(slug,(async()=>{
     const response=await fetch(live?`/api/v3/catalog?slug=${encodeURIComponent(slug)}`:`/catalog/${browse.version}/${encodeURIComponent(slug)}.json`,{cache:live?'no-store':'default',signal:AbortSignal.timeout(15000)})
     if(!response.ok)throw Error('Product options could not be retrieved. Please retry.')
@@ -54,9 +65,9 @@ export function CatalogProvider({children}:{children:ReactNode}){
     if(live&&!summary.current.some(p=>p.slug===slug&&p.revision===product.revision))return
     details.current.set(slug,product)
    })().finally(()=>pending.current.delete(slug)))
-   await pending.current.get(slug);setProducts(current=>current.map(p=>details.current.get(p.slug)??p))
+   await pending.current.get(slug);applyDetails()
   }catch(error){setErrors(current=>({...current,[slug]:error instanceof Error?error.message:'Product options unavailable.'}));throw error}
- },[refresh])
- const value=useMemo(()=>({products,loading:false,initializing,error,errorFor:(slug:string)=>errors[slug]??null,diagnostics:null,buildId:version.current,ensureProduct,refetch:()=>{void refresh().then(()=>{const slug=location.pathname.split('/').pop();if(slug)void ensureProduct(slug).catch(()=>{})}).catch(()=>{})}}),[products,errors,ensureProduct,refresh,initializing,error])
+ },[refresh,applyDetails])
+ const value=useMemo(()=>({products,loading:false,initializing,error,errorFor:(slug:string)=>errors[slug]??null,diagnostics:null,buildId:version.current,ensureProduct,refetch:()=>{void refresh(true).then(()=>{const slug=location.pathname.split('/').pop();if(slug)void ensureProduct(slug).catch(()=>{})}).catch(()=>{})}}),[products,errors,ensureProduct,refresh,initializing,error])
  return <Context.Provider value={value}>{error&&<div className="catalog-live-notice" role="alert">{error} <button onClick={value.refetch}>Retry</button></div>}{children}</Context.Provider>
 }

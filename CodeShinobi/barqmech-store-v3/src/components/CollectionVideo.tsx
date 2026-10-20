@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { saveMediaData, watchMediaConnection } from './mediaPreferences.ts'
+import { watchScrollIdle } from './scrollActivity.ts'
 
 /** Decorative category previews; their surrounding link supplies the accessible name. */
 export function CollectionVideo({ src, poster }: { src: string; poster?: string }) {
@@ -11,14 +12,15 @@ export function CollectionVideo({ src, poster }: { src: string; poster?: string 
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     let inView = false
     let disposed = false
+    let scrollIdle = true
     const syncPlayback = () => {
-      if (!inView || document.hidden || motion.matches || saveMediaData() || disposed) {
+      if (!inView || !scrollIdle || document.hidden || motion.matches || saveMediaData() || disposed) {
         video.pause()
       } else {
         video.muted = true
         if (!video.getAttribute('src')) video.src = src
         void video.play().then(() => {
-          if (disposed || !inView || document.hidden || motion.matches) video.pause()
+          if (disposed || !inView || !scrollIdle || document.hidden || motion.matches || saveMediaData()) video.pause()
         }).catch(() => { /* Keep the category poster if autoplay is unavailable. */ })
       }
     }
@@ -27,12 +29,14 @@ export function CollectionVideo({ src, poster }: { src: string; poster?: string 
       syncPlayback()
     }, { threshold: .1 })
     observer.observe(video)
+    const stopScrollWatch = watchScrollIdle(idle => { scrollIdle = idle; syncPlayback() })
     const stopConnectionWatch = watchMediaConnection(syncPlayback)
     video.addEventListener('canplay', syncPlayback)
     document.addEventListener('visibilitychange', syncPlayback)
     motion.addEventListener('change', syncPlayback)
     return () => {
       disposed = true
+      stopScrollWatch()
       observer.disconnect()
       stopConnectionWatch()
       video.removeEventListener('canplay', syncPlayback)

@@ -78,3 +78,5 @@ html.shinobi-section-scroll { scroll-behavior:auto; }
 @media (prefers-reduced-motion:reduce) {
   .shinobi-shell *, .shinobi-shell *::before, .shinobi-shell *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
 }
+.catalog-live-notice{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:1000;max-width:min(600px,90vw);padding:14px 18px;border:1px solid #765336;background:#fff5e6;color:#171b20;border-radius:10px;font:600 13px/1.5 'DM Sans',sans-serif;box-shadow:0 4px 24px #0002}.catalog-live-notice button{margin-left:10px;background:none;border:0;text-decoration:underline;cursor:pointer}
+.admin-route-wait{min-height:100svh;display:grid;place-content:center;padding:24px;background:#fff5e6;color:#171b20;font:600 15px/1.5 var(--ff-body,Arial,sans-serif)}

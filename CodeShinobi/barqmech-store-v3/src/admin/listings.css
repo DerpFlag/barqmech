@@ -1,5 +1,4 @@
 /* Compact administration chrome, with ordinary page flow for long forms. */
-.catalog-live-notice{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:1000;max-width:min(600px,90vw);padding:14px 18px;border:1px solid #765336;background:#fff5e6;color:#171b20;border-radius:10px;font:600 13px/1.5 'DM Sans',sans-serif;box-shadow:0 4px 24px #0002}.catalog-live-notice button{margin-left:10px;background:none;border:0;text-decoration:underline;cursor:pointer}
 .a-workspace .a-main{padding:20px 3vw 0}.a-workspace .a-top{min-height:68px;padding:12px 3vw}.a-workspace .a-demo{padding:7px 12px;font-size:11px;margin-bottom:12px!important}
 .a-workspace .a-title-row{margin-bottom:18px}.a-workspace .a-title-row h1{font-size:34px;letter-spacing:-1.2px;line-height:1.1;margin:7px 0}.a-workspace .a-intro{font-size:13px}
 .a-workspace .a-stats{margin-bottom:22px}.a-workspace .a-stats>div{padding:12px 22px}.a-workspace .a-stats>div:first-child{padding-left:0}.a-workspace .a-stats strong{font-size:28px;margin-top:4px}.a-workspace .a-stats .a-money{font-size:26px;margin-top:7px}

@@ -54,7 +54,7 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/admin" element={<Suspense fallback={<main className="a-root a-wait" aria-busy="true">Preparing your studio desk…</main>}><AdminPage/></Suspense>} />
+      <Route path="/admin" element={<Suspense fallback={<main className="admin-route-wait" aria-busy="true">Preparing your studio desk…</main>}><AdminPage/></Suspense>} />
       <Route element={<ShinobiLayout />}>
         <Route path="/" element={<ShinobiHomePage />} />
         <Route path="/products" element={<ShinobiProductsPage />} />

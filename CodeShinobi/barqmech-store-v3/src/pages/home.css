@@ -8,7 +8,7 @@ html.shinobi-section-scroll { scroll-padding-top: var(--home-header-height, 140p
   font-family: var(--ff-body);
 }
 .home-chapter h2 { margin: 0; color: inherit; font: 500 clamp(40px, 5.3vw, 82px)/.98 var(--ff-display); letter-spacing: -.035em; }
-.home-chapter :is(a,button,summary,input,textarea,select):focus-visible, .home-section-control :is(button,select):focus-visible, .metal-footer a:focus-visible { outline: 3px solid #cb421d; outline-offset: 5px; }
+.home-chapter :is(a,button,summary,input,textarea,select):focus-visible, .metal-footer a:focus-visible { outline: 3px solid #cb421d; outline-offset: 5px; }
 .cut-button { display: inline-flex; justify-content: center; align-items: center; gap: 24px; min-height: 48px; padding: 12px 22px; color: #edff7a; background: #252b20; border: 0; font: 500 14px/1.3 var(--ff-body); text-decoration: none; cursor: pointer; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); transition: background .2s, transform .2s; }
 .cut-button > span { font-size: 25px; font-weight: 400; }
 .cut-button:hover { background: #39462b; transform: translateY(-3px); }
@@ -114,10 +114,6 @@ html.shinobi-section-scroll { scroll-padding-top: var(--home-header-height, 140p
 .metal-footer .metal-footer__up { font-size: 34px; }
 .metal-footer a:hover { text-decoration: underline; text-underline-offset: 5px; }
 .metal-footer__bottom { display: flex; justify-content: space-between; gap: 20px; padding-top: 20px; margin-top: 8px; border-top: 1px solid #753d2255; }
-.home-section-control { position: fixed; z-index: 220; right: 14px; bottom: 12px; display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 40px; background: #252b20; color: #edff7a; box-shadow: 0 4px 14px #0002; }
-.home-section-control button { height: 40px; width: 40px; border-radius: 50%; border: 0; background: #edff7a; color: #252b20; font-size: 22px; cursor: pointer; }
-.home-section-control button:disabled { opacity: .35; cursor: default; }
-.home-section-control select { min-height: 40px; width: 132px; border: 0; border-radius: 0; color: #edff7a; background: #252b20; font: 12px var(--ff-body); padding-inline: 10px; cursor: pointer; }
 
 @media (max-width: 960px) {
   .home-chapter { padding-inline: 24px; gap: 20px; }
@@ -189,9 +185,6 @@ html.shinobi-section-scroll { scroll-padding-top: var(--home-header-height, 140p
   .metal-footer__links > :last-child { grid-column: 1 / -1; flex-direction: row; gap: 24px; }
   .metal-footer a { font-size: 12px; }
   .metal-footer__bottom { font-size: 9px; gap: 12px; }
-  .home-section-control { right: 10px; bottom: 10px; }
-  .home-section-control button { width: 44px; height: 44px; }
-  .home-section-control select { width: 124px; }
 }
 @media (min-width: 641px) and (max-height: 800px) {
   .home-chapter { padding-block: 24px 62px; gap: 18px; }
@@ -249,9 +242,6 @@ html.shinobi-section-scroll { scroll-padding-top: var(--home-header-height, 140p
 .shinobi-shell--home .product-search-input::placeholder { color:color-mix(in srgb,var(--nav-ink) 70%,transparent); }
 .shinobi-shell--home .shinobi-cat-link.is-active, .shinobi-shell--home .shinobi-cart-badge { color:var(--nav-on-accent); background:var(--nav-accent); }
 .shinobi-shell--home .shinobi-header :is(.shinobi-nav-link,.shinobi-cat-link,.shinobi-cart-btn):hover { background:color-mix(in srgb,var(--nav-ink) 12%,transparent); color:var(--nav-ink); }
-.shinobi-shell--home .home-section-control, .shinobi-shell--home .home-section-control select { background:var(--nav-accent); color:var(--nav-on-accent); }
-.shinobi-shell--home .home-section-control button { background:var(--nav-on-accent); color:var(--nav-accent); }
-.shinobi-shell--home[data-at-footer=true] .home-section-control { bottom: auto; top:calc(var(--home-header-height) + 12px); }
 .metal-rooms { background:#ff8658; display:flex; gap:24px; }
 .space-heading { display:flex; justify-content:space-between; gap:24px; }
 .space-heading h2 br { display:none; }
@@ -345,7 +335,7 @@ html.shinobi-section-scroll { scroll-padding-top: var(--home-header-height, 140p
 .metal-rooms { align-items:stretch; }
 @media (min-width:500px) and (max-width:640px) and (max-height:780px) { .edit-product__image { height:12svh; min-height:65px; } }
 .shinobi-shell--home { --ff-body: 'General Sans', system-ui, sans-serif; }
-.shinobi-shell--home :is(.shinobi-nav-link,.shinobi-icon-btn,.shinobi-cart-btn,.shinobi-cat-link,.product-search-input,.home-section-control select) { font-family:var(--ff-body); font-weight:600; letter-spacing:normal; }
+.shinobi-shell--home :is(.shinobi-nav-link,.shinobi-icon-btn,.shinobi-cart-btn,.shinobi-cat-link,.product-search-input) { font-family:var(--ff-body); font-weight:600; letter-spacing:normal; }
 .shinobi-shell--home .shinobi-hero__lede { font-family:var(--ff-body); font-weight:600; }
 .home-chapter, .metal-footer { font-family:var(--ff-body); font-weight:600; }
 .home-chapter :is(p,small,label,input,textarea,button), .metal-footer :is(p,a) { font-weight:600; }
@@ -465,7 +455,11 @@ html.shinobi-section-scroll { scroll-padding-top: var(--home-header-height, 140p
 .shinobi-shell--home .shinobi-hero-panel__inner { flex:none; min-height:0; }
 .shinobi-shell--home .shinobi-hero__copy { padding-top:0; }
 .shinobi-shell--home .shinobi-hero__ctas { margin-top:0; }
-.shinobi-shell--home .shinobi-hero__scroll-hint { display:block; bottom:22px; color:#ffffffb8; }
+.shinobi-shell--home .shinobi-hero__scroll-hint { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; left:50%; transform:translateX(-50%); bottom:16px; min-height:48px; padding:4px 12px; margin:0; border:0; background:transparent; color:#ffffffb8; line-height:1.4; text-align:center; white-space:nowrap; cursor:pointer; pointer-events:auto; }
+.shinobi-hero__scroll-hint:focus-visible { outline:2px solid currentColor; outline-offset:5px; border-radius:4px; }
+.shinobi-hero__scroll-arrow { flex:none; animation:hero-scroll-cue 1.8s ease-in-out infinite; }
+@keyframes hero-scroll-cue { 0%,100% { transform:translateY(0); } 50% { transform:translateY(5px); } }
+@media (prefers-reduced-motion:reduce) { .shinobi-hero__scroll-arrow { animation:none; } }
 @media (max-width:960px) {
   .shinobi-shell--home .shinobi-hero-panel__inner { gap:18px; }
   .shinobi-shell--home .shinobi-hero__lede { font-size:clamp(15px,1.8vw,18px); line-height:1.5; }
@@ -620,8 +614,7 @@ html.shinobi-section-scroll { scroll-padding-top: var(--home-header-height, 140p
 }
 @media (max-width:499px) {
   .shinobi-shell--home .shinobi-hero-panel { justify-content:flex-start; padding-top:32px; }
-  .shinobi-shell--home .shinobi-hero__scroll-hint { left:20px; transform:none; bottom:28px; font-size:10px; letter-spacing:.12em; }
-  .shinobi-shell--home[data-home-tone=blue] .home-section-control select { display:none; }
+  .shinobi-shell--home .shinobi-hero__scroll-hint { bottom:20px; font-size:10px; letter-spacing:.12em; }
   .metal-categories { gap:16px; padding-bottom:60px; }
   .metal-categories__intro > div { gap:8px; }
   .category-sample h3 { margin-top:14px; }
@@ -723,10 +716,6 @@ html.shinobi-section-scroll { scroll-padding-top: var(--home-header-height, 140p
   .shinobi-home .home-chapter h2 { font-size:38px; line-height:1.05; letter-spacing:-.035em; }
   .shinobi-home .home-chapter p { font-size:14px; line-height:1.6; }
   .shinobi-home .home-chapter .cut-button { min-height:46px; padding:12px 18px; font-size:14px; gap:20px; }
-  .shinobi-shell--home:not([data-home-tone=blue]) .home-section-control { right:12px; bottom:12px; top:auto; padding:4px; gap:4px; }
-  .shinobi-shell--home:not([data-home-tone=blue]) .home-section-control select { display:none; }
-  .shinobi-shell--home:not([data-home-tone=blue]) .home-section-control button { width:44px; height:44px; }
-  .shinobi-shell--home[data-at-footer=true] .home-section-control { display:none; }
   .shinobi-home .metal-categories__intro { display:grid; grid-template-columns:1fr; gap:18px; align-items:start; }
   .shinobi-home .metal-categories__intro > div { gap:10px; }
   .shinobi-home .metal-categories__intro p { max-width:32ch; margin:0; }

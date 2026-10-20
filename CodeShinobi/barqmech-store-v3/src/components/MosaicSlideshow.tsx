@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { localImageSet } from '../data/responsiveMedia.ts'
 import { LiquidImageReveal } from './LiquidImageReveal.tsx'
 
 /** Stationary labels; the next photograph must decode before fading in. */
-export function MosaicSlideshow({ urls, title, rotate }: { urls: string[]; title: string; rotate: boolean }) {
+export const MosaicSlideshow = memo(function MosaicSlideshow({ urls, title, rotate, sizes }: { urls: string[]; title: string; rotate: boolean; sizes: string }) {
   const stack = useRef<HTMLDivElement>(null)
   const loaded = useRef(new Set<string>())
   const [inView, setInView] = useState(false)
@@ -41,7 +41,7 @@ export function MosaicSlideshow({ urls, title, rotate }: { urls: string[]; title
   return <div ref={stack} className="space-tile__image" onPointerEnter={() => setInteracting(true)} onPointerLeave={() => setInteracting(false)}>
     {urls.map((url, slide) => (slide === index || slide === previous || (inView && slide === next)) &&
       <div key={url} className={`space-photo-slide${slide === index ? ' active' : ''}`} aria-hidden="true">
-        <img className="space-photo-main" src={url} srcSet={localImageSet(url)} sizes="(max-width:767px) 90vw, 55vw" alt="" loading={inView ? 'eager' : 'lazy'} decoding="async"
+        <img className="space-photo-main" src={url} srcSet={localImageSet(url)} sizes={sizes} alt="" loading={inView ? 'eager' : 'lazy'} decoding="async"
           onLoad={event => {
             const image = event.currentTarget
             void image.decode().then(() => loaded.current.add(url)).catch(() => loaded.current.add(url))
@@ -50,4 +50,4 @@ export function MosaicSlideshow({ urls, title, rotate }: { urls: string[]; title
     {inView && urls[next] ? <LiquidImageReveal image={urls[next]} /> : null}
     <div className="space-tile__caption"><h3>{title}</h3></div>
   </div>
-}
+})

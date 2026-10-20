@@ -440,3 +440,34 @@ Removed Discover buttons from all seven In your space tiles and deleted unused b
 
 
 Final2026-10-20 verification: production canonical/sitemap use www.barqmech.com; www/bare/Vercel origins accepted and foreign origins rejected. Main CI green. Both approved test messages show delivered; no further emails sent. Final domain evidence and architecture status updated.
+
+## 2026-10-20 — Interactive architecture field guide
+
+Standalone delivery clarification: `BarqMech-Field-Guide.html` at the repository root is the single-file handoff. Builder emits a byte-identical preview copy; static checks and SHA256 equality passed. No server or companion files required for guide content.
+
+- Added `docs/architecture-guide/index.html`: a self-contained cream/blue HTML reference with12 sections, interactive SVG service map, customer/admin flow demonstrations, shipping calculator, access matrix, release/recovery guide, source search and51 file references.
+- Embedded licensed fonts, brand assets and3 safe release screenshots; included keyboard search, native dialogs, responsive navigation, reduced-motion handling and print styling. No production data requests, credentials or signed private links are included.
+- Build, JavaScript syntax and static reference checks passed. Actual browser checks covered desktop/tablet/phone widths and the main interactive tools; evidence and remaining QA limits are recorded in the guide's `qa.json`. Architecture reference updated. No storefront/deployment/database changes made for this documentation task.
+
+## 2026-10-20 — V3 local performance pass
+
+- Prioritized native scrolling over decorative video, curved-text and footer-physics work with shared idle scheduling; retained existing section/category behavior and media safeguards.
+- Reduced repeated catalog prefetch and no-op rendering; stabilized mosaic props, corrected responsive image sizes and omitted unused stationary-card visibility observers.
+- Deferred 20.58kB admin stylesheet from public visits; initial public CSS about217.3→196.9kB. No dependencies added; no production deployment or backend/database changes.
+- 43 tests and production build/artifact checks pass. Desktop/mobile, catalog/PDP, local admin demo and footer interaction checked. Timing evidence and limitations saved in docs/previews/v3-optimization-2026-10-20.json; architecture and CSS ownership docs updated. Sustained60fps remains unverified.
+
+## 2026-10-20 — Correct hero opening-frame flash
+
+- Replaced the later-frame loading poster with the hero delivery video's actual opening frame; updated media preparation to avoid the previous1s seek. Poster69160→31234 bytes; encoded videos unchanged.
+- Production build/artifact checks pass. Compared first-frame imagery, verified high SSIM and checked mobile reload starts at0 before playback advances. Architecture/DESIGN notes and reload screenshot recorded. Local V3 only; not deployed.
+
+## 2026-10-20 — Centered hero scroll prompt
+
+- Centered mobile Scroll to explore and added a subtle downward arrowhead in both layouts. Text and arrow share one accessible button that advances to the collection; animation respects reduced motion.
+- Removed floating section controls, their unused styles/list and redundant active-section React state. Existing wheel/category navigation retained.
+- Desktop/mobile spacing, tap and keyboard navigation, homepage-only placement and control removal checked. Production build/artifact validation pass; screenshots and architecture/DESIGN updated. Local V3 only.
+
+## 2026-10-20 — Order confirmation readability
+
+- Replaced inherited legacy white/pale-blue receipt text with V3 dark ink on cream/light blue. Applied existing order-code badge and corrected total typography specificity.
+- Production build and desktop/mobile sample-receipt/unavailable-state browser checks pass. Preview used clearly labelled fake data without creating orders or sending mail; screenshots and architecture/DESIGN updated. Local only, not deployed.

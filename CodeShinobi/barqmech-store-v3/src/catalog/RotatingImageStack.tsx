@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CatalogImage } from './CatalogImage.tsx'
 import { catalogImageUrl, type CatalogImageSize } from '@store/catalog/productImages.ts'
 import { preloadImageUrls } from '@store/catalog/preloadImages.ts'
@@ -43,7 +43,9 @@ export function RotatingImageStack({
   const [internalIndex, setInternalIndex] = useState(0)
 
   const activeIndex = controlledIndex ?? internalIndex
-  const slides = !rotate && controlledIndex === undefined ? [urls[0] ?? ''] : urls.length ? urls : ['']
+  const controlled = controlledIndex !== undefined
+  const slides = useMemo(() => !rotate && !controlled ? [urls[0] ?? ''] : urls.length ? urls : [''], [urls, rotate, controlled])
+  const multiSlide = slides.length > 1
 
   useEffect(() => {
     setInternalIndex(0)
@@ -51,6 +53,9 @@ export function RotatingImageStack({
   }, [slides.join('|'), catalogSize])
 
   useEffect(() => {
+    // Stationary cards already use native image lazy loading. They need no
+    // observer/state update just because a shopper scrolls past them.
+    if (!multiSlide) return
     const el = stackRef.current
     if (!el) return
     const io = new IntersectionObserver(
@@ -59,7 +64,7 @@ export function RotatingImageStack({
     )
     io.observe(el)
     return () => io.disconnect()
-  }, [])
+  }, [multiSlide])
 
   useEffect(() => {
     if (!inView || slides.length <= 1) {

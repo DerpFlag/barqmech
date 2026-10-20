@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-20",
+  "scope": "Local architecture documentation only; no production mutations or API calls",
+  "preview": "http://127.0.0.1:5180/",
+  "static": {
+    "build": "passed",
+    "javascript_syntax": "passed",
+    "html_bytes": 521515,
+    "unique_ids": 68,
+    "internal_anchors": 20,
+    "existing_source_references": 51,
+    "external_runtime_resources": 0,
+    "unresolved_template_markers": 0,
+    "secret_like_token_patterns": 0,
+    "signed_storage_urls": 0
+  },
+  "browser": {
+    "surface": "Codex in-app browser, local HTTP preview",
+    "desktop_final": {
+      "width": 1280,
+      "client_width": 1265,
+      "scroll_width": 1265,
+      "scroll_y": 0
+    },
+    "responsive_observations": [
+      {
+        "width": 320,
+        "client_width": 305,
+        "scroll_width": 305,
+        "mobile_navigation_inert_when_closed": true
+      },
+      {
+        "width": 768,
+        "client_width": 753,
+        "scroll_width": 753
+      },
+      {
+        "width": 1440,
+        "client_width": 1425,
+        "scroll_width": 1425
+      }
+    ],
+    "checked": [
+      "System map selection updates the service detail panel",
+      "Shipping 4 sqft = 500; above 4 = 1000; 7 = 1000; above 7 = 1200; 24x49 inches = 1400",
+      "Quantity 99 does not multiply shipping",
+      "Invalid zero dimension displays validation",
+      "Stale admin revision simulation returns conflict; refresh permits the next edit",
+      "Price-change and Panel-manual scenarios show relevant steps",
+      "Archived listing state explains hidden and blocked behavior",
+      "Source filtering, global search and empty results",
+      "Ctrl+K focuses search; choosing a result closes it and navigates; Escape closes it",
+      "Screenshot lightbox opens with correct alternative text and closes",
+      "Copy local source path displays successful feedback",
+      "No console errors captured in the HTTP preview"
+    ]
+  },
+  "limitations": [
+    "Direct file URL launch is unsupported by this browser tool and was not browser-tested",
+    "Print/PDF output not rendered or visually inspected",
+    "Reduced-motion styles and handlers source-reviewed; operating-system preference not emulated",
+    "No automated axe, screen-reader, full cross-browser or physical-device certification",
+    "Service counts and release acceptance evidence are documented snapshots, not fresh production checks",
+    "The original narrow-screen heading overflow was corrected and retested; initial lightbox timing failure was retested successfully"
+  ]
+}

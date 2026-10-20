@@ -1,5 +1,5 @@
 /* V3 cascade entry. Order is intentional: base → shell → commerce → home → finish → motion.
-   Keep this import list stable; component files do not import global styles. */
+   Keep this import list stable. The isolated lazy admin route owns admin/styles.css. */
 @import './store-base.css';
 @import '../shinobi.css';
 @import '../theme.css';
@@ -10,5 +10,3 @@
 @import '../commerce-gallery.css';
 @import '../typography.css';
 @import '../studio-motion.css';
-@import '../admin/admin.css';
-@import '../admin/listings.css';

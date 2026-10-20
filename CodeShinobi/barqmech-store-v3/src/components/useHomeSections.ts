@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react'
+import { useCallback, useLayoutEffect, useRef, type RefObject } from 'react'
 
 /** A fitting final chapter must land at the document end, including fractional layout rounding. */
 function sectionScrollTop(target: HTMLElement, header: number, final: boolean) {
@@ -11,7 +11,6 @@ function sectionScrollTop(target: HTMLElement, header: number, final: boolean) {
 export function useHomeSections(root: RefObject<HTMLElement | null>, advanceWithinSection?: (direction: number, section: HTMLElement) => boolean) {
   const withinSection = useRef(advanceWithinSection)
   withinSection.current = advanceWithinSection
-  const [activeSection, setActiveSection] = useState(0)
   const headerHeight = useRef(0)
   const busyUntil = useRef(0)
   const reducedMotion = useRef(false)
@@ -95,7 +94,6 @@ export function useHomeSections(root: RefObject<HTMLElement | null>, advanceWith
         const list = sections()
         if (index !== lastIndex) {
           lastIndex = index
-          setActiveSection(index)
           if (shell) {
             shell.dataset.homeTone = list[index]?.dataset.sectionTheme ?? 'blue'
             shell.dataset.atFooter = String(index === list.length - 1)
@@ -209,5 +207,5 @@ export function useHomeSections(root: RefObject<HTMLElement | null>, advanceWith
     }
   }, [goToSection, sections])
 
-  return { activeSection, goToSection }
+  return { goToSection }
 }

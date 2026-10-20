@@ -292,3 +292,21 @@ The single entry `src/styles/storefront.css` owns import order; four home sheets
 Preserve section/category behavior and blue/cream composition. Browser-native smooth scrolling replaces per-frame JS scroll writes; section geometry is cached, state/datasets update only at boundaries, progress uses a transform ref and scroll-ink only changes affected letters. The ribbon retains its measured curve, viewport-sized repetitions and paint containment. Hero darkening uses a static overlay; previous slight saturation filter removed to avoid full-screen video filtering. Footer physics sets sizes only on reset/resize.
 
 Development-only motionDebug panel records callback timing, not true displayed FPS. Exploratory samples are variable;60fps is a target, not verified sustained performance. See living architecture for evidence/limitations. No new animation library or global GPU promotion was added.
+
+### 2026-10-20 — Prioritize scrolling over decorative work
+
+Preserve the blue/cream composition, curved ribbon, mosaics and desktop-only category sequencing. A shared passive scroll listener pauses decorative video/ribbon/shape simulation during movement and resumes after160ms quiet. Offscreen/background/reduced-motion/data-saving guards remain. No global will-change or new animation library. Stable memoized mosaic props keep section/category changes from rebuilding gallery arrays and restarting slideshow intervals; native-lazy stationary product cards no longer create visibility observers. Mosaic sizes match the winning desktop/mobile CSS slots.
+
+Intent prefetch reuses successful summary checks for15s and skips no-op product/error state writes. Focus, visibility, broadcast, manual refresh and30s poll still force refresh; server checkout remains authoritative. Admin styles load with the lazy admin route; the public catalog error surface stays in the storefront CSS. Initial storefront CSS falls from about217.3kB to196.9kB; main JS increases slightly for the controls.43 tests and the production build pass. Sampled desktop/mobile home, categories, footer, product routes and local admin demo checked. Short development RAF samples remain variable; no sustained60fps claim or production deployment. Root docs/previews/v3-optimization-2026-10-20.json records evidence and limitations.
+
+### 2026-10-20 — Seamless hero opening
+
+The loading poster now represents frame0 of the actual compressed hero rather than a later logo shot at1s. Fallback image and video poster remain aligned in the same cover rectangle. Source preparation now extracts the delivery video's first frame without seeking. Poster31234 bytes; encoded video/approved layout unchanged. Build/artifact checks and local mobile reload/playback checked. Local change, not deployed.
+
+### 2026-10-20 — First-screen scroll affordance
+
+Scroll to explore is centered in both layouts and is one48px native button, with a small matching currentColor chevron below. A5px CSS bob invites downward movement; reduced motion disables animation. Text and arrow share header-aware navigation to the collection. Existing typography/color retained; label moved up to fit the chevron. Removed lower-right section navigation and its unused CSS/state; desktop chapter/category wheel behavior remains. Browser checked374×668 and1280×720, text/arrow/keyboard activation, clear spacing, control removal and product-route absence. Build passes; local only.
+
+### 2026-10-20 — Receipt text contrast
+
+Order confirmation now explicitly uses palette-ink for heading, supporting text, order code and totals instead of inherited legacy white/pale-blue text. Blue accents, cream page and light-blue amount surface stay consistent with commerce. Existing code badge is now applied and the intended38px total wins over paragraph sizing. Actual production-build receipt rendering checked with clearly labelled local sample data at1280×720 and390×844, including no-token error state; build passes. No order/email/production changes.

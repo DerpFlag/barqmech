@@ -1,6 +1,6 @@
 # V3 stylesheet ownership
 
-`main.tsx` imports only `storefront.css`. Its ordered imports are the complete global cascade; components do not append global styles on mount. Keep the order intentional.
+`main.tsx` imports only `storefront.css`. Its ordered imports own the public storefront cascade. The isolated lazy admin route imports `admin/styles.css`, preserving admin.css then listings.css order without downloading those rules on ordinary storefront visits. Its selectors remain scoped to administration. Keep both entry orders intentional.
 
 | File | Edit here for |
 | --- | --- |
@@ -12,8 +12,8 @@
 | `../components/metal-playground.css` | Footer shape overlay. |
 | `../refinement.css`, `../commerce-gallery.css` | Shared finish/edge rules and commerce gallery/drawer refinements. |
 | `../typography.css`, `../studio-motion.css` | Local font faces/type tokens and opt-in motion/reduced-motion behavior. |
-| `../admin/admin.css` | V3-only studio desk/login, scoped to a-root and a- classes; independent of old shared admin styles. |
-| `../admin/listings.css` | Compact Orders/Listings navigation, live catalog notice and responsive listing forms. Workspace uses normal page flow. |
+| `../admin/admin.css` | Lazy admin/styles.css entry only: V3 studio desk/login, scoped to a-root and a- classes. |
+| `../admin/listings.css` | Lazy admin/styles.css entry only: Orders/Listings navigation and responsive forms. Public catalog-live-notice rules live in refinement.css so errors stay styled before any admin visit. |
 
 Find the existing component rule and its breakpoint before changing it. Update that owner rather than appending another global override. Keep necessary browser fallbacks, `!important` precedence, selector specificity and media conditions intact. V1/V2 and shared production CSS are preserved.
 

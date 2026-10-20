@@ -1,0 +1,210 @@
+{
+  "source": "C:\\Users\\raoan\\Downloads\\barqmech\\CodeShinobi\\barqmech-store-v2",
+  "created": "2026-10-17",
+  "files": [
+    {
+      "path": "DESIGN.md",
+      "sha256": "e114ef591fa65dbee37efafc2ae6f95536dbb777cba64760609a2279e384f65c"
+    },
+    {
+      "path": "index.html",
+      "sha256": "f83c5b83938b8c517b2371a5de2ea114bcb4591978a211026d1effaf990aa819"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "3fd97f19982090130a13d012e52191f40454f14a0fe3466c045e0bb187a883af"
+    },
+    {
+      "path": "package.json",
+      "sha256": "ea05da867120859a9fd193c1a7805e347841d71551c6c9c5f46f61adf9896951"
+    },
+    {
+      "path": "README.md",
+      "sha256": "a2e30f6d89106249c8f24dd9797f1281b4fc896e0d720ea3e8a030057b25c15e"
+    },
+    {
+      "path": "tsconfig.app.json",
+      "sha256": "9ef829f57c26426459998571bd762b1adf557376d49466e3005cdb8dd0242206"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "770b4140bbb581e2dfd9ea9946ffc9c75a1d86ba7d2db5f77c83e37cbdf9d808"
+    },
+    {
+      "path": "tsconfig.node.json",
+      "sha256": "d7bebd882df3b0613e36a1dc0558183612139f8a157c8013ea2e9eda7fbbb528"
+    },
+    {
+      "path": "vite.config.ts",
+      "sha256": "a07a1a7a0784d2733d1e3990880214ad80ba760a78540652982a58dcfa0be84b"
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "d104d539438d24236fe88f28ab849a3f957e3e2f309c4997568ece8bc68e2320"
+    },
+    {
+      "path": "src/commerce-gallery.css",
+      "sha256": "4c7ea8b5fe82e4a3350078a9b0284397efc9b29a0ea4e51b63f40a727da1a51f"
+    },
+    {
+      "path": "src/main.tsx",
+      "sha256": "9a609fb1f16a76ec5e6b7bfa53278debce218f7a636b5d48f1d213109e0d4904"
+    },
+    {
+      "path": "src/refinement.css",
+      "sha256": "aa5b23d16c27b3309431b6eefc1def01a6123d11d3cf717204022f08ea8a10a7"
+    },
+    {
+      "path": "src/shinobi.css",
+      "sha256": "6805470223cbcb68102c7f6e467f893ce399d0c2508fe94b5528a137febdbdeb"
+    },
+    {
+      "path": "src/storefront-commerce.css",
+      "sha256": "116fc7640cabb8d2b33d39e9d8e2a1e2dfa38aa348dbdb5fbc716bcd1609b7fd"
+    },
+    {
+      "path": "src/theme.css",
+      "sha256": "01346c21bcfa6403e891f1700d4944d37de2678e5c31db1089524692a1f01f6d"
+    },
+    {
+      "path": "src/assets/collection/artwork.mp4",
+      "sha256": "b118d47ea4ce1a776fb05a9785e476d7573fb5c1f19f1c759dc5704398591dae"
+    },
+    {
+      "path": "src/assets/collection/custom-utility.mp4",
+      "sha256": "c5f35abd8753a356d95520e790e3f6f589a72aea363ec389e5c084f35a9c6729"
+    },
+    {
+      "path": "src/assets/collection/islamic.mp4",
+      "sha256": "e000b503baea5b8762c3691ca809bbfd5a7b108a0b9875d6cc52992a36f73d0e"
+    },
+    {
+      "path": "src/assets/collection/panels.mp4",
+      "sha256": "25c2cd36c9fe7fb366cf2c0e131775b7d57cd514741503aa119a0c04672b378e"
+    },
+    {
+      "path": "src/cart/CartContext.tsx",
+      "sha256": "3c48f32204636335074bf95565f4838d8d3c09657ca76ccea681c38cd118636a"
+    },
+    {
+      "path": "src/cart/cartStorage.ts",
+      "sha256": "e540750d302ea4477f415bd9797f9e4c504419eeaefd03013180575e55a9dbb0"
+    },
+    {
+      "path": "src/cart/types.ts",
+      "sha256": "574a220f6b919ec587d239d9c85705f30e5fd580ce6a0eb9ec0aa45c7554313b"
+    },
+    {
+      "path": "src/components/CollectionVideo.tsx",
+      "sha256": "713f4109463fed7d3cc63b979aab207210095c84b9b357da5ce90aa2c715179e"
+    },
+    {
+      "path": "src/components/CommercePlaceholder.tsx",
+      "sha256": "7441c2748fe229f550423554e51c6d49f0b7a51cc207462c1691e6eaa11bffc1"
+    },
+    {
+      "path": "src/components/FinishPreview.tsx",
+      "sha256": "d10dafd108dea1cded93931423d4738e17cd3a8195f712858541252cd85653f7"
+    },
+    {
+      "path": "src/components/FixedVideoBackground.tsx",
+      "sha256": "ff022dde4f70403a8f5e40f4f94de862e4cec329a4fadae701b459a0e380e2a4"
+    },
+    {
+      "path": "src/components/metal-playground.css",
+      "sha256": "5261ded34a5b0cdf8a9a43967547de35b55b1575ba94e691e4a66f977fc32a59"
+    },
+    {
+      "path": "src/components/MetalPlayground.tsx",
+      "sha256": "f57556d9596814961f5772a5464c6e2420b5513f89bab5fc6bf77148d77d21b2"
+    },
+    {
+      "path": "src/components/MosaicSlideshow.tsx",
+      "sha256": "e2b63653571994bfe9345ed3966f865ea48f7301f4de9bac81d679df3a20bca0"
+    },
+    {
+      "path": "src/components/ProductListingCard.tsx",
+      "sha256": "0dd20ed77f14b883588b81afcbebaaee16a4af96515c9e8e6011b09a8327fc0a"
+    },
+    {
+      "path": "src/components/ProductThumb.tsx",
+      "sha256": "387b2b6b4799e40bfbb27a364b05ff18b8d160ccf51ce3a2a6a5f49318cd690c"
+    },
+    {
+      "path": "src/components/ScrollProgress.tsx",
+      "sha256": "27654178e1188a796f207018fe9b9150c73bcd419d0940df72ad8dcb9e22f899"
+    },
+    {
+      "path": "src/components/ShinobiCartButton.tsx",
+      "sha256": "112469cda0f2eaa77317dd88b67d2bc8ea114b21435b026254789d82c159898d"
+    },
+    {
+      "path": "src/components/ShinobiFooter.tsx",
+      "sha256": "b9ce9b4f5b8ef5818427a3d41f387be2b92cbdece68a1850ca8f1cce66a03131"
+    },
+    {
+      "path": "src/components/ShinobiHeader.tsx",
+      "sha256": "0f193bb12e42c91060e552f0a3ef639a3479622bac1123cbd316481c8319b1e0"
+    },
+    {
+      "path": "src/components/ShinobiLayout.tsx",
+      "sha256": "b8c07d8d40fb4650bd48cde6fc6a13a0209d8e896bb6d63f782f328d1fb9753c"
+    },
+    {
+      "path": "src/components/ShinobiLoader.tsx",
+      "sha256": "f3bd9f413f80b0b7ae006480dd1f06ba2e938c9ffea0c6d8a26d633b5defc566"
+    },
+    {
+      "path": "src/components/useHomeSections.ts",
+      "sha256": "1a804c44d8a9a726e460204aeccf6cf59ff43ef7b87548178cc275c30d45a603"
+    },
+    {
+      "path": "src/components/VideoHero.tsx",
+      "sha256": "50e46c2e402406f05727e658e6a2ffda13932fcf2cfff7cf1d6dd3fa3e22f16d"
+    },
+    {
+      "path": "src/data/catalog.ts",
+      "sha256": "1348efe3ccdab03a9ca52e3938076bf9240a9984bc2e53f846b3dfab60ded0fe"
+    },
+    {
+      "path": "src/data/category-image-dimensions.json",
+      "sha256": "1f8606eefe4ee547910ebd937f3d3a59e2d59b38a84276f6e79d17aee9fddf0c"
+    },
+    {
+      "path": "src/pages/home-composition.css",
+      "sha256": "c0550125566fb4eaebec58adf7023934a7915f4c4855b19be79613a89848a52e"
+    },
+    {
+      "path": "src/pages/home-palette.css",
+      "sha256": "5a460e3967b018276e5800422948a48105da16212deb5d0a20ea8c9c32b88fc2"
+    },
+    {
+      "path": "src/pages/home-responsive.css",
+      "sha256": "de77a94d81bb3b176f5134d36e9d35f49d3c5c8316ad8e1f427c681db7ef8169"
+    },
+    {
+      "path": "src/pages/home-sections.css",
+      "sha256": "6730deb67d5dd48f71814c54338714bec777ec554c822642536de5c145752bc0"
+    },
+    {
+      "path": "src/pages/ShinobiHomePage.tsx",
+      "sha256": "8b80d6f15de9f2db48145fd7c2d3d591b3a2fecc78cc23042c97c80c2948916d"
+    },
+    {
+      "path": "src/routes/ShinobiProductRoute.tsx",
+      "sha256": "4e00613c08e96d120afe7285c5c1286fa5c425bd011729e8a4c3c00861c89c00"
+    },
+    {
+      "path": "src/routes/ShinobiProductsRoute.tsx",
+      "sha256": "6428ed0c12d146990084da4a0e2e318cf86f981b55ed53a96672fd482ba82681"
+    },
+    {
+      "path": "src/routes/ShinobiProductsSearchRoute.tsx",
+      "sha256": "a3c062ef40d77be12030a3519ee4215b98323a5f5fe43e7e8b9e2bab82aafa79"
+    },
+    {
+      "path": "tests/cart-storage.test.mjs",
+      "sha256": "cd8be6e6eac786b693a50fbf43145a8e6e7ff887d62f49dfe6343092b7dffeda"
+    }
+  ]
+}

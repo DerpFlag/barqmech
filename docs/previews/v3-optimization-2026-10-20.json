@@ -1,0 +1,91 @@
+{
+  "date": "2026-10-20",
+  "scope": "V3 local-only optimization; not deployed",
+  "tests": {
+    "passed": 43,
+    "failed": 0,
+    "build": "passed;225 modules;346 product artifact checks"
+  },
+  "bundle": {
+    "baseline_main_css_bytes_approx": 217300,
+    "main_css": {
+      "file": "index-sJYu2hxi.css",
+      "bytes": 196892,
+      "gzip_level6_bytes": 35876
+    },
+    "deferred_admin_css_bytes": 20582,
+    "baseline_main_js_bytes": 363318,
+    "main_js_bytes": 364161,
+    "note": "CSS baseline is rounded Vite output. JavaScript grows slightly to implement scheduling/cache controls; no JS size reduction claimed."
+  },
+  "v2_manifest": {
+    "matched": 51,
+    "total": 51
+  },
+  "browser": {
+    "surface": "Codex in-app browser, local Vite development server",
+    "viewports": [
+      {
+        "width": 1280,
+        "height": 720,
+        "overflow": false
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "overflow": false
+      }
+    ],
+    "after_samples": [
+      {
+        "samples": 37,
+        "raf_hz": 56.9,
+        "p95_ms": 17,
+        "over50ms": 0,
+        "nearby_long_tasks": 0
+      },
+      {
+        "samples": 71,
+        "raf_hz": 54.6,
+        "p95_ms": 33.3,
+        "over50ms": 1,
+        "nearby_long_tasks": 1
+      },
+      {
+        "samples": 126,
+        "raf_hz": 52.9,
+        "p95_ms": 33.4,
+        "over50ms": 4,
+        "nearby_long_tasks": 3
+      }
+    ],
+    "prefetch_reuse": {
+      "repeat_focus_passes": 3,
+      "before": {
+        "summaries": 5,
+        "details": 3
+      },
+      "after": {
+        "summaries": 5,
+        "details": 3
+      }
+    },
+    "checked": [
+      "Collection video paused while scrolling and resumed after settlement",
+      "Hero playing at rest; offscreen clips paused",
+      "Desktop wheel changed category in place; final category advanced to workshop",
+      "Mobile scrolling moved document without changing selected category",
+      "Mobile product list rendered24 cards with visible images; PDP loaded without broken loaded images and Add to cart enabled",
+      "Admin demo loaded its scoped stylesheet and cream surface without overflow; no admin stylesheet on fresh storefront",
+      "Footer reached document end; ArrowUp moved a metal shape",
+      "Fresh localhost tab captured no console errors; diagnostic panel absent on normal URL"
+    ],
+    "limits": [
+      "RAF cadence is not GPU/display FPS; samples are short, uncontrolled and not a reliable before/after benchmark",
+      "Cold baseline sample had9.2Hz/583.3ms p95 during startup; excluded from improvement claims",
+      "Earlier edited development tab captured HMR context/memo replacement errors; clean reload/new tab recovered and fresh acceptance has no captured errors",
+      "No full Chrome Performance trace, Lighthouse, physical-device, throttled-network or reduced-motion runtime certification",
+      "No production deployment, live database write, order submission or email sent"
+    ]
+  }
+}

@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState, type FormEven
 import { AdminBrand, AdminWorkspace } from './AdminWorkspace.tsx'
 import { adminRequest, AdminApiError } from './client.ts'
 import type { AdminOrder } from './model.ts'
+import './styles.css'
 
 const Demo = import.meta.env.DEV ? lazy(()=>import('../dev/AdminDemo.tsx')) : null
 

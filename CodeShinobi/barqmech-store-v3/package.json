@@ -14,7 +14,7 @@
     "predev": "node scripts/build-catalog.mjs",
     "test:checkout": "node --experimental-test-isolation=none --test tests/checkout.test.mjs",
     "test:catalog": "node --experimental-test-isolation=none --test tests/catalog.test.mjs",
-    "test": "node --experimental-strip-types --experimental-test-isolation=none --test tests/cart-storage.test.mjs tests/catalog.test.mjs tests/checkout.test.mjs tests/server-config.test.mjs tests/admin.test.mjs tests/local-admin.test.mjs tests/listings.test.mjs"
+    "test": "node --experimental-strip-types --experimental-test-isolation=none --test tests/cart-storage.test.mjs tests/catalog.test.mjs tests/checkout.test.mjs tests/server-config.test.mjs tests/admin.test.mjs tests/local-admin.test.mjs tests/listings.test.mjs tests/scroll-activity.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

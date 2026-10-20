@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react'
+import { watchScrollIdle } from './scrollActivity.ts'
 
 const PIECES = [
   ['gold', 'hexagon'], ['silver', 'washer'], ['black', 'star'],
@@ -43,7 +44,7 @@ export function MetalPlayground() {
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     let bodies: Body[] = []
     let width = 0, height = 0, frame = 0, last = 0, ticks = 0
-    let visible = false, destroyed = false
+    let visible = false, destroyed = false, scrollIdle = true
     let held: { index: number; dx: number; dy: number; lastX: number; lastY: number; at: number } | null = null
 
     const paint = () => bodies.forEach((body, index) => {
@@ -96,7 +97,7 @@ export function MetalPlayground() {
     }
     const tick = (now: number) => {
       frame = 0
-      if (destroyed || !visible || document.hidden || motion.matches) return
+      if (destroyed || !visible || !scrollIdle || document.hidden || motion.matches) return
       const dt = Math.min((now - (last || now - 16)) / 1000, .032)
       last = now
       step(dt / 2); step(dt / 2)
@@ -107,7 +108,7 @@ export function MetalPlayground() {
     }
     const wake = () => {
       ticks = 0
-      if (!frame && visible && !document.hidden && !motion.matches) {
+      if (!frame && visible && scrollIdle && !document.hidden && !motion.matches) {
         last = 0
         frame = requestAnimationFrame(tick)
       }
@@ -144,6 +145,11 @@ export function MetalPlayground() {
       if (motion.matches) reset()
       else wake()
     }
+    const stopScrollWatch = watchScrollIdle(idle => {
+      scrollIdle = idle
+      if (idle) wake()
+      else { cancelAnimationFrame(frame); frame = 0; last = 0 }
+    })
     motion.addEventListener('change', sync)
     document.addEventListener('visibilitychange', sync)
     controls.current = {
@@ -190,6 +196,7 @@ export function MetalPlayground() {
     }
     return () => {
       destroyed = true
+      stopScrollWatch()
       controls.current = null
       cancelAnimationFrame(frame)
       resize.disconnect(); visibility.disconnect()

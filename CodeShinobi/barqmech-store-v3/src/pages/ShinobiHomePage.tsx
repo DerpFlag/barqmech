@@ -30,8 +30,15 @@ import { useHomeSections } from '../components/useHomeSections.ts'
 const SPACE_PREVIEW_FILES = ['metal-arts-and-custom-fabrication-06', 'doors-dividers-and-gates-01', 'racks-and-storage-01', 'lamps-and-lighting-03', 'stairs-and-railings-02', 'islamic-and-decorative-screens-01', 'walls-windows-and-ceiling-panels-09']
 // Mosaic slots: stairs and doors exchange positions; source galleries stay intact.
 const SPACE_TILE_ORDER = [0, 4, 2, 3, 1, 5, 6]
+const SPACE_TILE_WIDTHS = [55, 25, 20, 25, 35, 20, 20]
+const spaceTileSizes = (slot: number) => `(max-width:767px) ${slot === 0 ? 'calc(100vw - 40px)' : 'calc((100vw - 50px) / 2)'}, ${SPACE_TILE_WIDTHS[slot]}vw`
+// Keep gallery props stable when only the current chapter/category changes.
+const SPACE_TILES = SPACE_TILE_ORDER.map((sourceIndex, slot) => {
+  const tile = galleryTiles[sourceIndex]
+  const start = Math.max(0, tile.images.findIndex(url => url.includes(SPACE_PREVIEW_FILES[sourceIndex])))
+  return { tile, images: [...tile.images.slice(start), ...tile.images.slice(0, start)], sizes: spaceTileSizes(slot) }
+})
 const CATEGORY_PREVIEW_COUNT = 4
-const CHAPTERS = ['Introduction', 'The collection', 'In your space', 'Shop the edit', 'Make it yours', 'Custom work', 'Footer']
 const CATEGORY_NOTES: Record<FeaturedCategory, { title: string; description: string; detail: string }> = {
   Islamic: { title: 'Islamic', description: 'Calligraphy & geometric screens', detail: 'Calligraphy, expressed in metal. Explore intricate pieces for prayer spaces and the places you call home.' },
   Artwork: { title: 'Artwork', description: 'Sculptural pieces & wall art', detail: 'A focal point with a different texture. Discover laser-cut art and decorative pieces for your walls.' },
@@ -57,7 +64,7 @@ export default function ShinobiHomePage() {
   const { products, loading: catalogLoading, error: catalogError, diagnostics, buildId, refetch } = useCatalog()
   const pageRef = useRef<HTMLElement>(null)
   const [featuredCategory, setFeaturedCategory] = useState<FeaturedCategory>('Islamic')
-  const { activeSection, goToSection } = useHomeSections(pageRef, (direction, section) => {
+  const { goToSection } = useHomeSections(pageRef, (direction, section) => {
     if (section.id !== 'selected-pieces') return false
     const next = featuredCategories.indexOf(featuredCategory) + direction
     if (next < 0 || next >= featuredCategories.length) return false
@@ -181,13 +188,6 @@ export default function ShinobiHomePage() {
 
   return (
     <main className="shinobi-home shinobi-home--chapters" ref={pageRef}>
-      <nav className="home-section-control" aria-label="Home sections">
-        <button type="button" aria-label="Previous section" disabled={activeSection === 0} onClick={() => goToSection(activeSection - 1)}>↑</button>
-        <select aria-label="Jump to section" value={activeSection} onChange={(event) => goToSection(Number(event.target.value))}>
-          {CHAPTERS.map((chapter, index) => <option value={index} key={chapter}>{chapter}</option>)}
-        </select>
-        <button type="button" aria-label="Next section" disabled={activeSection === CHAPTERS.length - 1} onClick={() => goToSection(activeSection + 1)}>↓</button>
-      </nav>
       <section className="shinobi-hero-panel" id="home" data-home-section data-section-theme="blue" aria-label="Introduction">
         <div className="shinobi-container shinobi-hero-panel__inner">
           <div className="shinobi-hero__copy">
@@ -213,7 +213,12 @@ export default function ShinobiHomePage() {
             </a>
           </div>
         </div>
-        <div className="shinobi-hero__scroll-hint">Scroll to explore</div>
+        <button type="button" className="shinobi-hero__scroll-hint" onClick={() => goToSection(1)}>
+          <span>Scroll to explore</span>
+          <svg className="shinobi-hero__scroll-arrow" width="18" height="12" viewBox="0 0 18 12" fill="none" aria-hidden="true" focusable="false">
+            <path d="m2 3 7 6 7-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
       </section>
 
       <div className="shinobi-home__scroll">
@@ -247,12 +252,9 @@ export default function ShinobiHomePage() {
           <div className="space-heading"><div><h2 id="rooms-title">Metal for every space.</h2><p>From a wall detail to a whole new entrance.</p></div>
           </div>
           <div className="space-collage">
-            {SPACE_TILE_ORDER.map((sourceIndex, index) => {
-              const tile = galleryTiles[sourceIndex]
-              const start = Math.max(0, tile.images.findIndex((url) => url.includes(SPACE_PREVIEW_FILES[sourceIndex])))
-              const images = [...tile.images.slice(start), ...tile.images.slice(0, start)]
+            {SPACE_TILES.map(({tile,images,sizes}, index) => {
               return <Link key={tile.id} className={`space-tile space-tile--${index}`} aria-label={tile.title} to={`/products?category=${categorySlugs[galleryTileRouteCategory[tile.id]]}`}>
-                <MosaicSlideshow urls={images} title={tile.title} rotate={!spaceMotionReduced && pageVisible} />
+                <MosaicSlideshow urls={images} title={tile.title} rotate={!spaceMotionReduced && pageVisible} sizes={sizes} />
               </Link>
             })}
           </div>

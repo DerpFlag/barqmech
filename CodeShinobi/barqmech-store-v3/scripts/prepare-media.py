@@ -12,7 +12,8 @@ def run(src,dst,args):
 video=ROOT/'video/stitched-4x-fixed.mp4'
 for name,width,crf in [('hero-desktop',1280,25),('hero-mobile',720,26)]:
  run(video,OUT/(name+'.mp4'),['-an','-vf',f'scale={width}:-2,fps=30','-c:v','libx264','-preset','medium','-crf',str(crf),'-pix_fmt','yuv420p','-movflags','+faststart'])
-run(video,OUT/'hero-poster.webp',['-ss','1','-frames:v','1','-vf','scale=1280:-2','-c:v','libwebp','-quality','78'])
+# Match the first decoded delivery frame; seeking to 1s flashed a later logo shot.
+run(OUT/'hero-desktop.mp4',OUT/'hero-poster.webp',['-frames:v','1','-c:v','libwebp','-quality','86'])
 for src in (APP/'src/assets/collection').glob('*.mp4'):
  run(src,OUT/'collection'/src.name,['-an','-c:v','libx264','-preset','medium','-crf','23','-pix_fmt','yuv420p','-movflags','+faststart'])
 for src in (ROOT/'Media/category pics').rglob('*'):

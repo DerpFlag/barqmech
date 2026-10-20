@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { watchScrollIdle } from './scrollActivity.ts'
 
 const RIBBON_PHRASE = 'LASER CUT  ·  MADE TO ORDER  ·  FINISHED YOUR WAY  ·  '
 
@@ -31,13 +32,14 @@ export function CurvedRibbon() {
     const motion = matchMedia('(prefers-reduced-motion: reduce)')
     let frame = 0, inView = false, previous = 0, distance = travel.current
     let revealed = false
+    let scrollIdle = true, disposed = false
     let reveal: Animation | undefined
     let repeatWidth = 1600
     const shell = element.closest<HTMLElement>('.shinobi-shell')
     const measure = () => {
       const width = shell?.getBoundingClientRect().width ?? element.getBoundingClientRect().width
       const height = element.getBoundingClientRect().height
-      if (!width || !height) return
+      if (disposed || !width || !height) return
       shell?.style.setProperty('--studio-page-width', `${width}px`)
       element.setAttribute('viewBox', `0 0 ${width} ${height}`)
       const edge = height * .68, crest = height * .29
@@ -78,7 +80,7 @@ export function CurvedRibbon() {
         reveal?.cancel()
         group.current?.removeAttribute('mask')
       }
-      if (inView && !document.hidden && !motion.matches) frame = requestAnimationFrame(tick)
+      if (inView && scrollIdle && !document.hidden && !motion.matches) frame = requestAnimationFrame(tick)
     }
     if (mask.current && !motion.matches) mask.current.style.strokeDashoffset = '-1'
     const observer = new IntersectionObserver(([entry]) => {
@@ -93,13 +95,14 @@ export function CurvedRibbon() {
       sync()
     }, { rootMargin: '0px 0px -12% 0px' })
     observer.observe(element)
+    const stopScrollWatch = watchScrollIdle(idle => { scrollIdle = idle; sync() })
     motion.addEventListener('change', sync)
     document.addEventListener('visibilitychange', sync)
     const sizing = new ResizeObserver(measure)
     sizing.observe(element)
     if (shell) sizing.observe(shell)
     window.addEventListener('resize', measure)
-    return () => { travel.current = distance; stop(); reveal?.cancel(); observer.disconnect(); sizing.disconnect(); shell?.style.removeProperty('--studio-page-width'); motion.removeEventListener('change', sync); document.removeEventListener('visibilitychange', sync); window.removeEventListener('resize', measure) }
+    return () => { disposed = true; stopScrollWatch(); travel.current = distance; stop(); reveal?.cancel(); observer.disconnect(); sizing.disconnect(); shell?.style.removeProperty('--studio-page-width'); motion.removeEventListener('change', sync); document.removeEventListener('visibilitychange', sync); window.removeEventListener('resize', measure) }
   }, [])
   return <svg ref={root} className="studio-ribbon" viewBox="0 0 1400 160" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
     <defs>
