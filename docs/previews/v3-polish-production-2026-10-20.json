@@ -1,0 +1,18 @@
+{
+  "source_commit": "d55214c1524ef847b08c32977901fd69697ee55a",
+  "site": "https://www.barqmech.com",
+  "checks": {
+    "homepage_and_canonical": true,
+    "new_scroll_cue_css": true,
+    "floating_controls_removed": true,
+    "receipt_text_uses_ink": true,
+    "admin_css_deferred": true,
+    "opening_poster_sha256_matches": true,
+    "catalog_count": 346,
+    "product_detail_options": true,
+    "product_and_admin_routes": true,
+    "invalid_private_receipt_rejected": true
+  },
+  "poster_bytes": 31234,
+  "side_effects": "Read-only public GET checks; no orders, emails, admin mutations or database writes"
+}

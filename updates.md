@@ -471,3 +471,9 @@ Standalone delivery clarification: `BarqMech-Field-Guide.html` at the repository
 
 - Replaced inherited legacy white/pale-blue receipt text with V3 dark ink on cream/light blue. Applied existing order-code badge and corrected total typography specificity.
 - Production build and desktop/mobile sample-receipt/unavailable-state browser checks pass. Preview used clearly labelled fake data without creating orders or sending mail; screenshots and architecture/DESIGN updated. Local only, not deployed.
+
+## 2026-10-20 — Performance/UI follow-up deployed
+
+- Published reviewed source commit d55214c to GitHub main; Vercel automatic production deployment READY and GitHub validation successful. Includes performance work, corrected hero poster, centered clickable scroll cue, floating-control removal, receipt readability, deferred admin styles and standalone architecture guide.
+- Fresh locked installations,43 tests, production build and346-product artifact validation pass. Credential scan found0 configured secret matches across3763 tracked files. No backend/schema/env changes or new orders/emails.
+- Live canonical homepage, new styles/poster checksum,346-product catalog, product/admin routes and private-receipt rejection checked. Browser verified hero/cue/collection playback and no sampled overflow/console errors. Acceptance JSON and screenshot saved; recovery tag pre-v3-polish-2026-10-20 retains previous08ae4a7.
