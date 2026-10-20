@@ -12,7 +12,7 @@ html.shinobi-section-scroll { scroll-behavior:auto; }
   letter-spacing:normal; text-transform:none;
 }
 .shinobi-shell .shinobi-header { backdrop-filter:none; -webkit-backdrop-filter:none; }
-.shinobi-shell.shinobi-shell--home .shinobi-header { backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+.shinobi-shell.shinobi-shell--home .shinobi-header { -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
 .shinobi-shell .shinobi-header--solid { box-shadow:0 1px 0 #171b201a; }
 .shinobi-shell.shinobi-shell :is(.cut-button,.mosaic-discover-btn,.product-detail-btn,.checkout-submit-btn,.cart-drawer-checkout-primary) {
   clip-path:none; border-radius:var(--edge-radius); border:1px solid #171b2026;

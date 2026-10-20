@@ -1497,3 +1497,9 @@ User requested pushing reviewed updates to GitHub. Prepared38 explicitly selecte
 
 
 Wave release pre-push gate: clean checkout43/43 regression tests, Supabase-mode/canonical-www225-module build and346-product artifacts pass. npm audit reports0 known vulnerabilities. Scan of3794 tracked files found0 configured credential matches;38 staged files limited to V3/docs/updates. Vercel barqmech is still linked to DerpFlag/barqmech/main with repository root and V3 dist. Backend/schema/env untouched; publication and live acceptance pending.
+
+### 2026-10-20 — Wave theme pushed; production CSS compatibility correction
+
+Published application commit1c0a6f407b40f03e1ed0932467a4f6c9b7870a25 to main with atomic recovery tag pre-v3-wave-theme-2026-10-20 at previous a723993. GitHub validate succeeded; automatic Vercel production dpl_3D8dDhXzHq2XtyoGqpDDx3h11Ac5 reached READY. Read-only public checks confirm new wave CSS/header fade rules, all four artwork checksums (mobile cream3668 bytes inlined by Vite), six sampled page routes200 and346-product live catalog. Live desktop catalog/admin login show new artwork and no sampled overflow. No secrets/backend/schema/environment changes.
+
+Live CSSOM revealed production optimization retained only -webkit-backdrop-filter when it appeared after the standard declaration, leaving computed backdrop-filter none in Chromium. Reordered declarations to prefix-first/standard-last in V3 refinement.css, surface-patterns.css and lazy admin/surfaces.css. Corrected Supabase-mode production build225 modules/346 artifacts passes; compiled CSS now retains both declarations with standard10px blur. No extra JavaScript or auth/data change. Follow-up publication/live verification pending at this entry. Local source updated to match. Public acceptance aggregate: docs/previews/v3-wave-production-2026-10-20.json.

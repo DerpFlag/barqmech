@@ -1,0 +1,64 @@
+{
+  "origin": "https://www.barqmech.com",
+  "css": "/assets/index-7zZ4jSlF.css",
+  "wave_css": true,
+  "header_transition": true,
+  "assets": [
+    {
+      "name": "blue-waves-1920",
+      "status": 200,
+      "inlined": false,
+      "bytes": 31526,
+      "checksum_match": true
+    },
+    {
+      "name": "blue-waves-768",
+      "status": 200,
+      "inlined": false,
+      "bytes": 9612,
+      "checksum_match": true
+    },
+    {
+      "name": "cream-waves-1920",
+      "status": 200,
+      "inlined": false,
+      "bytes": 13062,
+      "checksum_match": true
+    },
+    {
+      "name": "cream-waves-768",
+      "status": null,
+      "inlined": true,
+      "bytes": 3668,
+      "checksum_match": true
+    }
+  ],
+  "routes": [
+    {
+      "path": "/",
+      "status": 200
+    },
+    {
+      "path": "/products/search?q=abstract",
+      "status": 200
+    },
+    {
+      "path": "/products/artwork/artwork-abstract-ball",
+      "status": 200
+    },
+    {
+      "path": "/checkout",
+      "status": 200
+    },
+    {
+      "path": "/checkout/success",
+      "status": 200
+    },
+    {
+      "path": "/admin",
+      "status": 200
+    }
+  ],
+  "catalog_status": 200,
+  "catalog_count": 346
+}

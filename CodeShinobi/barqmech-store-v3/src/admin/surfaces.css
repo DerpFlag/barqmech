@@ -15,8 +15,8 @@
   top: 0;
   z-index: 50;
   background: #ffffff0d;
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 .a-root :is(.a-login-story, .a-order.is-active, .l-card.is-selected, .a-notes) {
   background-image: var(--wave-cool);
