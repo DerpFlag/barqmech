@@ -521,3 +521,7 @@ Header extension now fades opacity over650ms at chapter changes; section artwork
 ## 2026-10-20 — Wave theme throughout V3
 
 Replaced flat page/panel surfaces across catalog/search/PDP/cart/checkout/receipt and admin login/orders/listings with supplied responsive warm/blue artwork. Transparent blurred navigation, readable translucent fields/editor panels and consistent blue receipt actions. Admin surfaces remain lazy. Final production build/346-product artifacts pass; sampled desktop/mobile review, temporary cart selection removed and labelled receipt fixture only. No backend/data/email or deployment changes; architecture and stylesheet ownership updated.
+
+## 2026-10-20 — Wave theme deployed
+
+Pushed reviewed theme1c0a6f4 and production blur compatibility fix48b3201 to GitHub main. Vercel production READY; GitHub validation successful.43 tests/build/346 artifacts pass, npm audit0 known advisories; staged secret/whitespace checks pass. Live public routes/catalog/media checksums and browser10px header blur verified. Recovery tag pre-v3-wave-theme-2026-10-20 retains a723993. No database/env/customer/order/email changes.

@@ -1,8 +1,9 @@
 {
   "origin": "https://www.barqmech.com",
-  "css": "/assets/index-7zZ4jSlF.css",
+  "css": "/assets/index-BuYE2koH.css",
   "wave_css": true,
   "header_transition": true,
+  "standard_blur_css": true,
   "assets": [
     {
       "name": "blue-waves-1920",
